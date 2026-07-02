@@ -93,8 +93,8 @@
                         <thead>
                             <tr>
                                 <th>Mes</th>
-                                <th>Gasto Hogar</th>
-                                <th>Servicios</th>
+                                <th>Servicios (Hogar)</th>
+                                <th>Servicios Míos</th>
                                 <th>% Hogar/Sueldo</th>
                                 <th>Gastos Placer</th>
                                 <th>% Placer</th>
@@ -332,16 +332,17 @@
                 tbodyMedios.appendChild(trMedios);
 
                 // 3. Tabla Distribución (Orden corregido y simétrico con el HTML headers)
-                const trCategorias = document.createElement("tr");
-                trCategorias.innerHTML = `
-                    <td>${etiquetaMes}</td>
-                    <td>${fMoneda(gastoHogar)}</td>
-                    <td>${fMoneda(serviciosMios)}</td>
-                    <td>${porcHogarSueldo}%</td>
-                    <td>${fMoneda(gastosPlacer)}</td>
-                    <td>${porcPlacer}%</td>
-                `;
-                tbodyCategorias.appendChild(trCategorias);
+// 3. Tabla Distribución (Mapeo simétrico y corregido según tus categorías)
+const trCategorias = document.createElement("tr");
+trCategorias.innerHTML = `
+    <td>${etiquetaMes}</td>
+    <td>${fMoneda(gastoHogar)}</td>
+    <td>${fMoneda(serviciosMios)}</td>
+    <td>${porcHogarSueldo}%</td>
+    <td>${fMoneda(gastosPlacer)}</td>
+    <td>${porcPlacer}%</td>
+`;
+tbodyCategorias.appendChild(trCategorias);
             });
 
             document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
