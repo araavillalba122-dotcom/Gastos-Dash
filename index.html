@@ -17,12 +17,12 @@
             
             <div class="kpi-container">
                 <div class="kpi-box">
-                    <span class="kpi-title">Gasto Fijo Hogar</span>
+                    <span class="kpi-title">Proyección Fijo Próximo Mes</span>
                     <span id="kpiHogar" class="kpi-value">$ 0</span>
                 </div>
                 <div class="kpi-box">
-                    <span class="kpi-title">% Gasto Tarjeta</span>
-                    <span id="kpiTarjetaPorc" class="kpi-value">0%</span>
+                    <span class="kpi-title">Tarjeta Próximo Mes</span>
+                    <span id="kpiTarjetaPorc" class="kpi-value">$ 0</span>
                 </div>
                 <div class="kpi-box">
                     <span class="kpi-title">Gastos Placer</span>
@@ -189,7 +189,7 @@
             });
 
             const hoy = new Date();
-            const mesNumero = hoy.getMonth() + 1; // Corrección matemática limpia
+            const mesNumero = hoy.getMonth() + 1;
             const mesActualString = hoy.getFullYear() + "-" + String(mesNumero).padStart(2, '0');
 
             if (meses.includes(mesActualString)) {
@@ -287,14 +287,9 @@
                 const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 const enMercadoCredito = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("mercado")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 
-// 1. Buscamos de manera exacta "servicios hogar" en el tipo de gasto
-const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios hogar").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-
-// 2. Filtramos de manera estricta "servicios míos" (manejando con o sin acento por las dudas)
-const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-
-// 3. Tus gastos de placer se mantienen igual
-const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios hogar").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
 
                 const porcGastoTarjeta = gastoTotal > 0 ? Math.round((enTarjeta / gastoTotal) * 100) : 0;
                 const porcHogarSueldo = sueldo > 0 ? Math.round((gastoHogar / sueldo) * 100) : 0;
@@ -303,8 +298,25 @@ const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && 
                 const sobrante = sueldo - gastoTotal;
 
                 if (mes === mesActualSeleccionado) {
+                    // --- PROYECCIÓN DE TARJETA SIGUIENTE MES ---
+                    const [anio, parteMes] = mes.split("-");
+                    let mesSigNum = parseInt(parteMes, 10) + 1;
+                    let anioSigNum = parseInt(anio, 10);
+                    if (mesSigNum > 12) {
+                        mesSigNum = 1;
+                        anioSigNum += 1;
+                    }
+                    const mesSiguienteString = anioSigNum + "-" + String(mesSigNum).padStart(2, '0');
+
+                    const registrosMesSiguiente = datosGlobales.filter(d => d.Mes.startsWith(mesSiguienteString));
+                    kpiTarjetaPorcVal = registrosMesSiguiente
+                        .filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta"))
+                        .reduce((a, c) => a + (c["Valor de cuota"] || 0), 0);
+
+                    // --- PROYECCIÓN FIJO SIGUIENTE MES ---
                     kpiHogarVal = gastoHogar;
-                    kpiTarjetaPorcVal = porcGastoTarjeta;
+
+                    // Gastos Placer
                     kpiPlacerVal = gastosPlacer;
                 }
 
@@ -336,22 +348,21 @@ const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && 
                 `;
                 tbodyMedios.appendChild(trMedios);
 
-                // 3. Tabla Distribución (Orden corregido y simétrico con el HTML headers)
-// 3. Tabla Distribución (Mapeo simétrico y corregido según tus categorías)
-const trCategorias = document.createElement("tr");
-trCategorias.innerHTML = `
-    <td>${etiquetaMes}</td>
-    <td>${fMoneda(gastoHogar)}</td>
-    <td>${fMoneda(serviciosMios)}</td>
-    <td>${porcHogarSueldo}%</td>
-    <td>${fMoneda(gastosPlacer)}</td>
-    <td>${porcPlacer}%</td>
-`;
-tbodyCategorias.appendChild(trCategorias);
+                // 3. Tabla Distribución
+                const trCategorias = document.createElement("tr");
+                trCategorias.innerHTML = `
+                    <td>${etiquetaMes}</td>
+                    <td>${fMoneda(gastoHogar)}</td>
+                    <td>${fMoneda(serviciosMios)}</td>
+                    <td>${porcHogarSueldo}%</td>
+                    <td>${fMoneda(gastosPlacer)}</td>
+                    <td>${porcPlacer}%</td>
+                `;
+                tbodyCategorias.appendChild(trCategorias);
             });
 
             document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
-            document.getElementById("kpiTarjetaPorc").textContent = `${kpiTarjetaPorcVal}%`;
+            document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
             document.getElementById("kpiPlacer").textContent = fMoneda(kpiPlacerVal);
         }
 
@@ -498,8 +509,9 @@ tbodyCategorias.appendChild(trCategorias);
                 const fechaMes = r["Mes"];
                 
                 if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
+                    txtMonto = r["Valor de cuota"] || 0;
                     ultimosFijosMap[conceptoNormalizado] = {
-                        monto: r["Valor de cuota"] || 0,
+                        monto: txtMonto,
                         mes: fechaMes
                     };
                 }
