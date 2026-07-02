@@ -256,7 +256,7 @@
             construirGraficoHistorico();
         }
 
-        function construirTablaComparativa() {
+          function construirTablaComparativa() {
             const tbodyBalance = document.querySelector("#tablaBalance tbody");
             const tbodyMedios = document.querySelector("#tablaMedios tbody");
             const tbodyCategorias = document.querySelector("#tablaCategorias tbody");
@@ -360,6 +360,17 @@
             document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
             document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
             document.getElementById("kpiPlacer").textContent = fMoneda(kpiPlacerVal);
+        }
+
+        function cambiarTab(evento, tabId) {
+            const botones = document.querySelectorAll(".tab-btn");
+            botones.forEach(btn => btn.classList.remove("active"));
+            
+            const contenidos = document.querySelectorAll(".tab-content");
+            contenidos.forEach(cont => cont.classList.remove("active"));
+            
+            evento.currentTarget.classList.add("active");
+            document.getElementById(tabId).classList.add("active");
         }
 
         function cambiarTab(evento, tabId) {
