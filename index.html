@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Proyectado</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="background-glow"></div>
+
+    <div class="app-container">
+        <header class="glass-card">
+            <h1>Mis Gastos</h1>
+            <p>Proyecciones Mensuales</p>
+        </header>
+
+        <main class="glass-card">
+            <canvas id="graficoGastos"></canvas>
+        </main>
+    </div>
+
+    <script>
+        // Pegamos la URL que te dio Google Apps Script en el paso anterior
+        const URL_API = "https://script.google.com/macros/s/AKfycbxgrRahTUilBkV4ZzEwX7UUHO6i08ZuLFtJSJOwwe5NtZ376PatHSVWsvViEknoi3Nz/exec";
+
+        async function renderizarGrafico() {
+            try {
+                const respuesta = await fetch(URL_API);
+                const datos = await respuesta.json();
+                
+                // --- Aquí procesas tus datos (Agrupar por mes, etc.) ---
+                // Para probar que conecta, vemos los datos en la consola del navegador:
+                console.log("Datos recibidos:", datos);
+                
+                // Configuración básica de Chart.js (Ejemplo temporal)
+                const ctx = document.getElementById('graficoGastos').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Ene', 'Feb', 'Mar', 'Abr'], // Esto lo haremos dinámico después
+                        datasets: [{
+                            label: 'Gastos ($)',
+                            data: [1200, 1900, 3000, 500],
+                            backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                            borderColor: 'rgba(255, 255, 255, 0.7)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#fff' } } }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error trayendo el JSON:", error);
+            }
+        }
+
+        renderizarGrafico();
+    </script>
+</body>
+</html>
