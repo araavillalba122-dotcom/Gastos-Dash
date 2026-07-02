@@ -1,3 +1,4 @@
+/* ================= SYSTEM RESET & BASIC DESIGN ================= */
 * {
     margin: 0;
     padding: 0;
@@ -23,7 +24,7 @@ body {
     gap: 16px;
 }
 
-/* Base de Glassmorphism */
+/* ================= GLASSMORPHISM BASE CARDS ================= */
 .glass-card {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
@@ -34,12 +35,12 @@ body {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
 }
 
+/* Header principal con acento magenta */
 .header-main {
     text-align: center;
-    background: rgba(216, 27, 96, 0.1); /* Tinte magenta sutil */
+    background: rgba(216, 27, 96, 0.1); 
     border: 1px solid rgba(216, 27, 96, 0.25);
 }
-
 .header-main h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
 .header-main p { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
 
@@ -59,7 +60,7 @@ h2 {
 }
 .card-header-actions h2 { margin-bottom: 0; }
 
-/* Estilizado de selectores Glassmorph */
+/* ================= GLASSMORPH SELECTORS ================= */
 select {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -72,7 +73,6 @@ select {
 }
 select option { background: #1c1221; color: #fff; }
 
-/* Wrappers para gráficos responsive */
 .chart-wrapper {
     position: relative;
     width: 100%;
@@ -89,10 +89,42 @@ select option { background: #1c1221; color: #fff; }
 }
 .filter-section label { font-size: 0.9rem; font-weight: 500; }
 
-/* Tablas con diseño ejecutivo */
+/* ================= EXECUTIVE HEAD-UP DISPLAY (KPIs) ================= */
+.kpi-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 14px;
+}
+.kpi-box {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.kpi-title {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.kpi-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f48fb1; /* Tono rosa destacado */
+}
+
+/* ================= TABLES & FINANCIAL SPREADSHEETS ================= */
 .table-responsive {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Scroll ultra fluido en iOS */
+    border-radius: 12px;
 }
 table {
     width: 100%;
@@ -100,18 +132,32 @@ table {
     font-size: 0.8rem;
     text-align: left;
 }
-th {
-    color: rgba(255,255,255,0.5);
+table th, table td {
+    padding: 8px 12px;
+    white-space: nowrap; /* Evita saltos de línea molestos en números */
+    text-align: center;
+}
+table th {
+    background: rgba(216, 27, 96, 0.15); /* Encabezados con tinte rosa corporativo */
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.75rem;
     font-weight: 500;
-    padding-bottom: 8px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-td {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+table td {
+    font-size: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+/* Fijar visualmente la primera columna de meses al scrollear de costado */
+table td:first-child, table th:first-child {
+    position: sticky;
+    left: 0;
+    background: #1c1424; /* Color sólido para que no transparente el texto de atrás */
+    z-index: 2;
+    font-weight: bold;
 }
 
-/* Lista de cuotas de la parte 3 */
+/* ================= SECTION 3: ALERTAS DE CUOTAS ================= */
 .cuotas-list {
     display: flex;
     flex-direction: column;
@@ -131,3 +177,26 @@ td {
 .cuota-cant { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
 .cuota-monto { font-size: 0.95rem; font-weight: 700; color: #f48fb1; }
 .no-data { font-size: 0.8rem; color: rgba(255,255,255,0.4); text-align: center; }
+
+/* ================= SECTION 4: GASTOS REGULARES ================= */
+.fijos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px; /* Scroll sutil si la lista crece */
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.fijo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+.fijo-meta { display: flex; flex-direction: column; text-align: left; }
+.fijo-nombre { font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.9); }
+.fijo-fecha { font-size: 0.7rem; color: rgba(255,255,255,0.4); }
+.fijo-monto { font-size: 0.9rem; font-weight: 600; color: #4ade80; } /* Verde para visualización rápida */
