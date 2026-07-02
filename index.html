@@ -3,64 +3,343 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Proyectado</title>
+    <title>Dashboard Control de Gastos</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-    <div class="background-glow"></div>
-
     <div class="app-container">
-        <header class="glass-card">
-            <h1>Mis Gastos</h1>
-            <p>Proyecciones Mensuales</p>
+        
+        <header class="glass-card header-main">
+            <h1>Control Financiero</h1>
+            <p>Análisis de Gastos e Ingresos Proyectados</p>
         </header>
 
-        <main class="glass-card">
-            <canvas id="graficoGastos"></canvas>
-        </main>
+        <section class="glass-card">
+            <div class="card-header-actions">
+                <h2>Evolución Mensual</h2>
+                <select id="selectorHistorico" onchange="actualizarGraficoHistorico()">
+                    <option value="todos">Sueldo vs Gastos</option>
+                    <option value="Gasto">Solo Gastos</option>
+                    <option value="Ingreso">Solo Ingresos</option>
+                </select>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="graficoHistorico"></canvas>
+            </div>
+        </section>
+
+        <section class="glass-card table-section">
+            <h2>Resumen Métricas por Mes</h2>
+            <div class="table-responsive">
+                <table id="tablaComparativa">
+                    <thead>
+                        <tr>
+                            <th>Mes</th>
+                            <th>Total Gasto</th>
+                            <th>En Tarjeta</th>
+                            <th>Sobrante</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+
+        <section class="glass-card filter-section">
+            <label for="selectorMesDetalle">Ver detalle del mes:</label>
+            <select id="selectorMesDetalle" onchange="actualizarDetalleMensual()">
+                </select>
+        </section>
+
+        <section class="glass-card">
+            <h2>Distribución por Medio de Pago</h2>
+            <div class="chart-wrapper">
+                <canvas id="graficoMediosPago"></canvas>
+            </div>
+        </section>
+
+        <section class="glass-card">
+            <h2>Análisis por Tipo de Gasto</h2>
+            <div class="chart-wrapper">
+                <canvas id="graficoTiposGasto"></canvas>
+            </div>
+        </section>
+
+
+        <section class="glass-card cuotas-section">
+            <h2>💳 Alerta de Cuotas Pendientes</h2>
+            <p class="subtitle">Compromisos futuros en Tarjeta de Crédito</p>
+            <div id="contenedorCuotas" class="cuotas-list">
+                </div>
+        </section>
+
     </div>
 
     <script>
-        // Pegamos la URL que te dio Google Apps Script en el paso anterior
+        // CONFIGURACIÓN: Pega acá la URL de tu Google Apps Script de implementación
         const URL_API = "https://script.google.com/macros/s/AKfycbxgrRahTUilBkV4ZzEwX7UUHO6i08ZuLFtJSJOwwe5NtZ376PatHSVWsvViEknoi3Nz/exec";
 
-        async function renderizarGrafico() {
+        let datosGlobales = [];
+        let graficoHistObj = null;
+        let graficoMediosObj = null;
+        let graficoTiposObj = null;
+
+        async function inicializarDashboard() {
             try {
                 const respuesta = await fetch(URL_API);
-                const datos = await respuesta.json();
+                datosGlobales = await respuesta.json();
                 
-                // --- Aquí procesas tus datos (Agrupar por mes, etc.) ---
-                // Para probar que conecta, vemos los datos en la consola del navegador:
-                console.log("Datos recibidos:", datos);
+                if(datosGlobales.error) {
+                    console.error(datosGlobales.error);
+                    return;
+                }
+
+                // 1. Cargar selectores y componentes estáticos
+                poblarSelectorMeses();
                 
-                // Configuración básica de Chart.js (Ejemplo temporal)
-                const ctx = document.getElementById('graficoGastos').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Ene', 'Feb', 'Mar', 'Abr'], // Esto lo haremos dinámico después
-                        datasets: [{
-                            label: 'Gastos ($)',
-                            data: [1200, 1900, 3000, 500],
-                            backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                            borderColor: 'rgba(255, 255, 255, 0.7)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: { legend: { labels: { color: '#fff' } } }
-                    }
-                });
+                // 2. Renderizar Parte 1
+                construirGraficoHistorico();
+                construirTablaComparativa();
+
+                // 3. Renderizar Parte 2 & 3
+                actualizarDetalleMensual();
 
             } catch (error) {
-                console.error("Error trayendo el JSON:", error);
+                console.error("Error cargando el dashboard:", error);
             }
         }
 
-        renderizarGrafico();
+        // --- HELPER PARA FORMATEAR MONEDA ---
+        const fMoneda = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
+
+        // --- PROCESAMIENTO DE DATOS ---
+        function obtenerMesesUnicos() {
+            let meses = [...new Set(datosGlobales.map(d => d.Mes.substring(0, 7)))];
+            return meses.sort(); // Ordena cronológicamente YYYY-MM
+        }
+
+        function poblarSelectorMeses() {
+            const selector = document.getElementById("selectorMesDetalle");
+            const meses = obtenerMesesUnicos();
+            selector.innerHTML = "";
+            meses.forEach(mes => {
+                const option = document.createElement("option");
+                option.value = mes;
+                // Transforma '2026-07' en '07/2026' para mantener tu estética limpia
+                const [anio, m] = mes.split("-");
+                option.textContent = `${m}/${anio}`;
+                selector.appendChild(option);
+            });
+            // Seleccionar el mes actual indexado por defecto si existe
+            if(meses.length > 0) selector.value = meses[0];
+        }
+
+        // ================= RENDERS PARTE 1 =================
+        function construirGraficoHistorico() {
+            const meses = obtenerMesesUnicos();
+            const tipoFiltro = document.getElementById("selectorHistorico").value;
+
+            const datosSueldo = meses.map(mes => {
+                // Suma los ingresos correspondientes a ese mes de impacto real
+                return datosGlobales.filter(d => d.Mes.startsWith(mes) && d["Gasto/Ingreso"] === "Ingreso")
+                                    .reduce((acc, curr) => acc + (curr["Valor de cuota"] || 0), 0);
+            });
+
+            const datosGastos = meses.map(mes => {
+                return datosGlobales.filter(d => d.Mes.startsWith(mes) && d["Gasto/Ingreso"] === "Gasto")
+                                    .reduce((acc, curr) => acc + (curr["Valor de cuota"] || 0), 0);
+            });
+
+            const ctx = document.getElementById('graficoHistorico').getContext('2d');
+            
+            if(graficoHistObj) graficoHistObj.destroy();
+
+            let datasets = [];
+            if (tipoFiltro === "todos" || tipoFiltro === "Ingreso") {
+                datasets.push({
+                    label: 'Sueldo / Ingreso',
+                    data: datosSueldo,
+                    backgroundColor: 'rgba(244, 143, 177, 0.6)', // Rosa pastel claro
+                    borderColor: '#f48fb1',
+                    borderWidth: 2,
+                    borderRadius: 8
+                });
+            }
+            if (tipoFiltro === "todos" || tipoFiltro === "Gasto") {
+                datasets.push({
+                    label: 'Gasto Total',
+                    data: datosGastos,
+                    backgroundColor: 'rgba(216, 27, 96, 0.7)', // Magenta intenso de tu excel
+                    borderColor: '#d81b60',
+                    borderWidth: 2,
+                    borderRadius: 8
+                });
+            }
+
+            graficoHistObj = new Chart(ctx, {
+                type: 'bar',
+                data: { 
+                    labels: meses.map(m => { const [a, mesNum] = m.split("-"); return `${mesNum}/${a}`; }), 
+                    datasets: datasets 
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#fff' } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#fff' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } }
+                    }
+                }
+            });
+        }
+
+        function actualizarGraficoHistorico() {
+            construirGraficoHistorico();
+        }
+
+        function construirTablaComparativa() {
+            const tbody = document.querySelector("#tablaComparativa tbody");
+            tbody.innerHTML = "";
+            const meses = obtenerMesesUnicos();
+
+            meses.forEach(mes => {
+                const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mes));
+                
+                const gastoTotal = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && d["Tipo de pago"] === "Tarjeta de Crédito").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const sueldo = registrosMes.filter(d => d["Gasto/Ingreso"] === "Ingreso").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const sobrante = sueldo - gastoTotal;
+
+                const tr = document.createElement("tr");
+                const [a, m] = mes.split("-");
+                
+                tr.innerHTML = `
+                    <td><strong>${m}/${a}</strong></td>
+                    <td>${fMoneda(gastoTotal)}</td>
+                    <td>${fMoneda(enTarjeta)}</td>
+                    <td style="color: ${sobrante >= 0 ? '#4ade80' : '#f87171'}; font-weight: bold;">${fMoneda(sobrante)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        // ================= RENDERS PARTE 2 (FILTRADA) =================
+        function actualizarDetalleMensual() {
+            const mesSeleccionado = document.getElementById("selectorMesDetalle").value;
+            const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mesSeleccionado) && d["Gasto/Ingreso"] === "Gasto");
+
+            // 1. Agrupar por Medio de Pago (Dona / Pie moderno)
+            const mediosMap = {};
+            registrosMes.forEach(r => {
+                const mp = r["Tipo de pago"] || "Otros";
+                mediosMap[mp] = (mediosMap[mp] || 0) + (r["Valor de cuota"] || 0);
+            });
+
+            const ctxMedios = document.getElementById('graficoMediosPago').getContext('2d');
+            if(graficoMediosObj) graficoMediosObj.destroy();
+            graficoMediosObj = new Chart(ctxMedios, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(mediosMap),
+                    datasets: [{
+                        data: Object.values(mediosMap),
+                        backgroundColor: ['#d81b60', '#f48fb1', '#8e24aa', '#00acc1', '#5e35b1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                }
+            });
+
+            // 2. Agrupar por Tipo de Gasto (Barras Horizontales Modernas)
+            const tiposMap = {};
+            registrosMes.forEach(r => {
+                const tg = r["Tipo de gasto"] || "General";
+                tiposMap[tg] = (tiposMap[tg] || 0) + (r["Valor de cuota"] || 0);
+            });
+
+            const ctxTipos = document.getElementById('graficoTiposGasto').getContext('2d');
+            if(graficoTiposObj) graficoTiposObj.destroy();
+            graficoTiposObj = new Chart(ctxTipos, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(tiposMap),
+                    datasets: [{
+                        label: 'Monto ($)',
+                        data: Object.values(tiposMap),
+                        backgroundColor: 'rgba(255, 255, 255, 0.35)',
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Hace las barras horizontales hiper corporativas
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } },
+                        y: { ticks: { color: '#fff' } }
+                    }
+                }
+            });
+
+            // Renderizar Parte 3 en base a este mes de corte
+            calcularProyeccionCuotas(mesSeleccionado);
+        }
+
+
+        // ================= RENDERS PARTE 3 (CUOTAS FUTURAS) =================
+        function calcularProyeccionCuotas(mesCorte) {
+            const contenedor = document.getElementById("contenedorCuotas");
+            contenedor.innerHTML = "";
+
+            const meses = obtenerMesesUnicos();
+            // Filtrar solo meses posteriores al seleccionado
+            const mesesFuturos = meses.filter(m => m > mesCorte).slice(0, 4); // Ver los próximos 4 meses
+
+            if(mesesFuturos.length === 0) {
+                contenedor.innerHTML = "<p class='no-data'>No hay cuotas programadas para los meses siguientes.</p>";
+                return;
+            }
+
+            mesesFuturos.forEach(mes => {
+                const cuotasTarjeta = datosGlobales.filter(d => 
+                    d.Mes.startsWith(mes) && 
+                    d["Gasto/Ingreso"] === "Gasto" && 
+                    d["Tipo de pago"] === "Tarjeta de Crédito"
+                );
+
+                const totalMesFuturo = cuotasTarjeta.reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+
+                const item = document.createElement("div");
+                item.className = "cuota-futura-item";
+                
+                const [a, m] = mes.split("-");
+
+                item.innerHTML = `
+                    <div class="cuota-meta">
+                        <span class="cuota-mes">${m}/${a}</span>
+                        <span class="cuota-cant">${cuotasTarjeta.length} compras pendientes</span>
+                    </div>
+                    <div class="cuota-monto">${fMoneda(totalMesFuturo)}</div>
+                `;
+                contenedor.appendChild(item);
+            });
+        }
+
+        // Ejecutar todo al iniciar
+        inicializarDashboard();
     </script>
 </body>
 </html>
