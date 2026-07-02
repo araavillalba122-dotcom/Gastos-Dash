@@ -45,66 +45,66 @@
             </div>
         </section>
 
-<section class="glass-card table-section">
-    <h2>Cuadro de Mando Mensual</h2>
-    
-    <div class="tabs-container">
-        <button class="tab-btn active" onclick="cambiarTab(event, 'tab-balance')">Balance</button>
-        <button class="tab-btn" onclick="cambiarTab(event, 'tab-medios')">Medios Pago</button>
-        <button class="tab-btn" onclick="cambiarTab(event, 'tab-categorias')">Distribución</button>
-    </div>
+        <section class="glass-card table-section">
+            <h2>Cuadro de Mando Mensual</h2>
+            
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="cambiarTab(event, 'tab-balance')">Balance</button>
+                <button class="tab-btn" onclick="cambiarTab(event, 'tab-medios')">Medios Pago</button>
+                <button class="tab-btn" onclick="cambiarTab(event, 'tab-categorias')">Distribución</button>
+            </div>
 
-    <div id="tab-balance" class="tab-content active">
-        <div class="table-responsive">
-            <table id="tablaBalance">
-                <thead>
-                    <tr>
-                        <th>Mes</th>
-                        <th>Sueldo</th>
-                        <th>Gasto Total</th>
-                        <th>Sobrante</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+            <div id="tab-balance" class="tab-content active">
+                <div class="table-responsive">
+                    <table id="tablaBalance">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Sueldo</th>
+                                <th>Gasto Total</th>
+                                <th>Sobrante</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
 
-    <div id="tab-medios" class="tab-content">
-        <div class="table-responsive">
-            <table id="tablaMedios">
-                <thead>
-                    <tr>
-                        <th>Mes</th>
-                        <th>En Cuenta</th>
-                        <th>En Tarjeta</th>
-                        <th>Mercado Crédito</th>
-                        <th>% Tarjeta</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+            <div id="tab-medios" class="tab-content">
+                <div class="table-responsive">
+                    <table id="tablaMedios">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>En Cuenta</th>
+                                <th>En Tarjeta</th>
+                                <th>Mercado Crédito</th>
+                                <th>% Tarjeta</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
 
-    <div id="tab-categorias" class="tab-content">
-        <div class="table-responsive">
-            <table id="tablaCategorias">
-                <thead>
-                    <tr>
-                        <th>Mes</th>
-                        <th>Gasto Hogar</th>
-                        <th>Servicios</th>
-                        <th>% Hogar/Sueldo</th>
-                        <th>Gastos Placer</th>
-                        <th>% Placer</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-</section>
+            <div id="tab-categorias" class="tab-content">
+                <div class="table-responsive">
+                    <table id="tablaCategorias">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Gasto Hogar</th>
+                                <th>Servicios</th>
+                                <th>% Hogar/Sueldo</th>
+                                <th>Gastos Placer</th>
+                                <th>% Placer</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
         <section class="glass-card filter-section">
             <label for="selectorMesDetalle">Ver detalle del mes:</label>
@@ -129,15 +129,13 @@
         <section class="glass-card cuotas-section">
             <h2>💳 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">Compromisos futuros en Tarjeta de Crédito</p>
-            <div id="contenedorCuotas" class="cuotas-list">
-                </div>
+            <div id="contenedorCuotas" class="cuotas-list"></div>
         </section>
 
         <section class="glass-card fijos-section">
             <h2>🏠 Gastos Regulares y Servicios</h2>
             <p class="subtitle">Último valor registrado para previsión mensual</p>
-            <div id="contenedorFijos" class="fijos-list">
-                </div>
+            <div id="contenedorFijos" class="fijos-list"></div>
         </section>
 
     </div>
@@ -160,14 +158,9 @@
                     return;
                 }
 
-                // 1. Cargar selectores dinámicos colocando el mes actual por default
                 poblarSelectorMeses();
-                
-                // 2. Renderizar Históricos de la Parte 1
                 construirGraficoHistorico();
                 construirTablaComparativa();
-
-                // 3. Renderizar Detalle de Mes Seleccionado (Partes 2, 3 y 4)
                 actualizarDetalleMensual();
 
             } catch (error) {
@@ -175,13 +168,11 @@
             }
         }
 
-        // --- HELPER PARA FORMATEAR MONEDA ---
         const fMoneda = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
 
-        // --- PROCESAMIENTO DE CRONOLOGÍAS ---
         function obtenerMesesUnicos() {
             let meses = [...new Set(datosGlobales.map(d => d.Mes.substring(0, 7)))];
-            return meses.sort(); // Orden cronológico estricto YYYY-MM
+            return meses.sort();
         }
 
         function poblarSelectorMeses() {
@@ -197,19 +188,17 @@
                 selector.appendChild(option);
             });
 
-            // Lógica Default: Establecer Mes Actual dinámico (en formato YYYY-MM)
             const hoy = new Date();
-            const mesActualString = hoy.getFullYear() + "-" + String(hoy.getMonth() + 1).padStart(2, '0');
+            const mesNumero = hoy.getMonth() + 1; // Corrección matemática limpia
+            const mesActualString = hoy.getFullYear() + "-" + String(mesNumero).padStart(2, '0');
 
             if (meses.includes(mesActualString)) {
                 selector.value = mesActualString;
             } else if (meses.length > 0) {
-                // Si el mes actual no tiene datos cargados, se para en el último del historial
                 selector.value = meses[meses.length - 1];
             }
         }
 
-        // ================= CONSTRUCCIÓN CUADRO DE MANDO HISTÓRICO =================
         function construirGraficoHistorico() {
             const meses = obtenerMesesUnicos();
             const tipoFiltro = document.getElementById("selectorHistorico").value;
@@ -271,13 +260,11 @@
             construirGraficoHistorico();
         }
 
-function construirTablaComparativa() {
-            // Seleccionamos los tres cuerpos de tabla nuevos
+        function construirTablaComparativa() {
             const tbodyBalance = document.querySelector("#tablaBalance tbody");
             const tbodyMedios = document.querySelector("#tablaMedios tbody");
             const tbodyCategorias = document.querySelector("#tablaCategorias tbody");
             
-            // Limpiamos los tres contenedores
             tbodyBalance.innerHTML = "";
             tbodyMedios.innerHTML = "";
             tbodyCategorias.innerHTML = "";
@@ -293,7 +280,6 @@ function construirTablaComparativa() {
             meses.forEach(mes => {
                 const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mes));
                 
-                // Cálculos base matemáticos
                 const sueldo = registrosMes.filter(d => d["Gasto/Ingreso"] === "Ingreso").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 const gastoTotal = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 
@@ -311,7 +297,6 @@ function construirTablaComparativa() {
                 
                 const sobrante = sueldo - gastoTotal;
 
-                // Captura dinámica para las tarjetas KPI de arriba
                 if (mes === mesActualSeleccionado) {
                     kpiHogarVal = gastoHogar;
                     kpiTarjetaPorcVal = porcGastoTarjeta;
@@ -321,12 +306,11 @@ function construirTablaComparativa() {
                 const [anio, m] = mes.split("-");
                 const etiquetaMes = `<strong>${m}/${anio}</strong>`;
                 
-                // Formato condicional financiero para el sobrante
                 const styleSobrante = sobrante >= 0 
                     ? "background-color: rgba(74, 222, 128, 0.15); color: #4ade80; font-weight: bold;" 
                     : "background-color: rgba(220, 38, 38, 0.2); color: #f87171; font-weight: bold;";
 
-                // 1. Inyectar en Tabla Balance
+                // 1. Tabla Balance
                 const trBalance = document.createElement("tr");
                 trBalance.innerHTML = `
                     <td>${etiquetaMes}</td>
@@ -336,7 +320,7 @@ function construirTablaComparativa() {
                 `;
                 tbodyBalance.appendChild(trBalance);
 
-                // 2. Inyectar en Tabla Medios de Pago
+                // 2. Tabla Medios de Pago
                 const trMedios = document.createElement("tr");
                 trMedios.innerHTML = `
                     <td>${etiquetaMes}</td>
@@ -347,46 +331,39 @@ function construirTablaComparativa() {
                 `;
                 tbodyMedios.appendChild(trMedios);
 
-                // 3. Inyectar en Tabla Categorías/Distribución
+                // 3. Tabla Distribución (Orden corregido y simétrico con el HTML headers)
                 const trCategorias = document.createElement("tr");
                 trCategorias.innerHTML = `
                     <td>${etiquetaMes}</td>
                     <td>${fMoneda(gastoHogar)}</td>
                     <td>${fMoneda(serviciosMios)}</td>
-                    <td>${fMoneda(gastosPlacer)}</td>
                     <td>${porcHogarSueldo}%</td>
+                    <td>${fMoneda(gastosPlacer)}</td>
                     <td>${porcPlacer}%</td>
                 `;
                 tbodyCategorias.appendChild(trCategorias);
             });
 
-            // Actualizar KPIs superiores de la cabecera
             document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
             document.getElementById("kpiTarjetaPorc").textContent = `${kpiTarjetaPorcVal}%`;
             document.getElementById("kpiPlacer").textContent = fMoneda(kpiPlacerVal);
         }
 
-        // Función controladora para alternar entre los Tabs en iOS
         function cambiarTab(evento, tabId) {
-            // Desactivar todos los botones de la pestaña activa
             const botones = document.querySelectorAll(".tab-btn");
             botones.forEach(btn => btn.classList.remove("active"));
             
-            // Ocultar todos los bloques de contenido
             const contenidos = document.querySelectorAll(".tab-content");
             contenidos.forEach(cont => cont.classList.remove("active"));
             
-            // Activar el botón presionado y mostrar su respectiva tabla
             evento.currentTarget.classList.add("active");
             document.getElementById(tabId).classList.add("active");
         }
 
-        // ================= ENTRADA DE FILTRADO DETALLADO MENSUAL =================
         function actualizarDetalleMensual() {
             const mesSeleccionado = document.getElementById("selectorMesDetalle").value;
             const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mesSeleccionado) && d["Gasto/Ingreso"] === "Gasto");
 
-            // 1. Gráfico de Medios de Pago
             const mediosMap = {};
             registrosMes.forEach(r => {
                 const mp = r["Tipo de pago"] || "Otros";
@@ -412,7 +389,6 @@ function construirTablaComparativa() {
                 }
             });
 
-            // 2. Gráfico de Tipos de Gasto
             const tiposMap = {};
             registrosMes.forEach(r => {
                 const tg = r["Tipo de gasto"] || "General";
@@ -446,13 +422,11 @@ function construirTablaComparativa() {
                 }
             });
 
-            // 3. Render de Alertas Futuras e Interfaz de KPIs
             construirTablaComparativa();
             calcularProyeccionCuotas(mesSeleccionado);
             calcularGastosRegulares();
         }
 
-        // ================= RENDERS PARTE 3 (CUOTAS FUTURAS) =================
         function calcularProyeccionCuotas(mesCorte) {
             const contenedor = document.getElementById("contenedorCuotas");
             contenedor.innerHTML = "";
@@ -491,7 +465,6 @@ function construirTablaComparativa() {
             });
         }
 
-        // ================= RENDERS PARTE 4 (GASTOS REGULARES RECURRENTES) =================
         function calcularGastosRegulares() {
             const contenedor = document.getElementById("contenedorFijos");
             contenedor.innerHTML = "";
@@ -544,7 +517,6 @@ function construirTablaComparativa() {
             });
         }
 
-        // Ejecutar todo el setup al cargar la ventana
         inicializarDashboard();
     </script>
 </body>
