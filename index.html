@@ -287,9 +287,14 @@
                 const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 const enMercadoCredito = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("mercado")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 
-                const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("hogar")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-                const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().includes("servicio") || String(d["Concepto"]).toLowerCase().includes("servicio"))).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-                const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+// 1. Buscamos de manera exacta "servicios hogar" en el tipo de gasto
+const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios hogar").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+
+// 2. Filtramos de manera estricta "servicios míos" (manejando con o sin acento por las dudas)
+const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+
+// 3. Tus gastos de placer se mantienen igual
+const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
 
                 const porcGastoTarjeta = gastoTotal > 0 ? Math.round((enTarjeta / gastoTotal) * 100) : 0;
                 const porcHogarSueldo = sueldo > 0 ? Math.round((gastoHogar / sueldo) * 100) : 0;
