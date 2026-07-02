@@ -2,49 +2,132 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 body {
     min-height: 100vh;
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+    background: linear-gradient(135deg, #121824 0%, #2a1435 100%);
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 20px;
-    overflow-x: hidden;
+    padding: 16px;
+    color: #ffffff;
 }
 
-/* Contenedor optimizado para la pantalla del iPhone */
 .app-container {
     width: 100%;
-    max-width: 400px;
+    max-width: 430px; /* Ancho exacto ideal de un iPhone Pro Max */
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
-/* La magia del Glassmorphism */
+/* Base de Glassmorphism */
 .glass-card {
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px); /* Soporte fundamental para Safari en iPhone */
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 24px;
-    padding: 24px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+}
+
+.header-main {
     text-align: center;
+    background: rgba(216, 27, 96, 0.1); /* Tinte magenta sutil */
+    border: 1px solid rgba(216, 27, 96, 0.25);
 }
 
-header.glass-card h1 {
-    font-size: 1.5rem;
+.header-main h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+.header-main p { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+h2 {
+    font-size: 1rem;
     font-weight: 600;
-    letter-spacing: -0.5px;
-    margin-bottom: 4px;
+    margin-bottom: 12px;
+    letter-spacing: -0.2px;
+    color: rgba(255,255,255,0.9);
 }
 
-header.glass-card p {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.6);
+.card-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
+.card-header-actions h2 { margin-bottom: 0; }
+
+/* Estilizado de selectores Glassmorph */
+select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+}
+select option { background: #1c1221; color: #fff; }
+
+/* Wrappers para gráficos responsive */
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 200px; /* Forzamos altura simétrica para mobile */
+}
+
+/* Sección de Filtro Intermedio */
+.filter-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.15);
+}
+.filter-section label { font-size: 0.9rem; font-weight: 500; }
+
+/* Tablas con diseño ejecutivo */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    text-align: left;
+}
+th {
+    color: rgba(255,255,255,0.5);
+    font-weight: 500;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+td {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Lista de cuotas de la parte 3 */
+.cuotas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cuota-futura-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 4px solid #d81b60; /* El indicador rosa de alerta */
+    padding: 10px 14px;
+    border-radius: 8px;
+}
+.cuota-meta { display: flex; flex-direction: column; }
+.cuota-mes { font-size: 0.9rem; font-weight: 600; }
+.cuota-cant { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+.cuota-monto { font-size: 0.95rem; font-weight: 700; color: #f48fb1; }
+.no-data { font-size: 0.8rem; color: rgba(255,255,255,0.4); text-align: center; }
