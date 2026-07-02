@@ -129,7 +129,7 @@
         </section>
 
         <section class="glass-card fijos-section">
-            <h2>🏠 Gastos Regulares y Servicios</h2>
+            <h2>🏠 Servicios Hogar y Míos</h2>
             <p class="subtitle">Último valor registrado Servicios</p>
             <div id="contenedorFijos" class="fijos-list"></div>
         </section>
@@ -256,7 +256,7 @@
             construirGraficoHistorico();
         }
 
-          function construirTablaComparativa() {
+        function construirTablaComparativa() {
             const tbodyBalance = document.querySelector("#tablaBalance tbody");
             const tbodyMedios = document.querySelector("#tablaMedios tbody");
             const tbodyCategorias = document.querySelector("#tablaCategorias tbody");
@@ -287,9 +287,28 @@
                 const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
 
-                const porcGastoTarjeta = gastoTotal > 0 ? Math.round((enTarjeta / gastoTotal) * 100) : 0;
-                const porcHogarSueldo = sueldo > 0 ? Math.round((gastoHogar / sueldo) * 100) : 0;
-                const porcPlacer = gastoTotal > 0 ? Math.round((gastosPlacer / gastoTotal) * 100) : 0;
+                // --- LÓGICA DE COMODÍN FINANCIERO (SUELDO RESPALDO SI ES 0) ---
+                let sueldoReferencia = sueldo;
+
+                if (sueldoReferencia === 0) {
+                    const [anioAct, mesAct] = mes.split("-");
+                    let mesAntNum = parseInt(mesAct, 10) - 1;
+                    let anioAntNum = parseInt(anioAct, 10);
+                    if (mesAntNum === 0) {
+                        mesAntNum = 12;
+                        anioAntNum -= 1;
+                    }
+                    const mesAnteriorString = anioAntNum + "-" + String(mesAntNum).padStart(2, '0');
+                    
+                    sueldoReferencia = datosGlobales
+                        .filter(d => d.Mes.startsWith(mesAnteriorString) && d["Gasto/Ingreso"] === "Ingreso")
+                        .reduce((a, c) => a + (c["Valor de cuota"] || 0), 0);
+                }
+
+                // Modificamos las métricas para que utilicen la base de ingresos inteligente
+                const porcGastoTarjeta = sueldoReferencia > 0 ? Math.round((enTarjeta / sueldoReferencia) * 100) : 0;
+                const porcHogarSueldo = sueldoReferencia > 0 ? Math.round((gastoHogar / sueldoReferencia) * 100) : 0;
+                const porcPlacer = sueldoReferencia > 0 ? Math.round((gastosPlacer / sueldoReferencia) * 100) : 0;
                 
                 const sobrante = sueldo - gastoTotal;
 
@@ -360,17 +379,6 @@
             document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
             document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
             document.getElementById("kpiPlacer").textContent = fMoneda(kpiPlacerVal);
-        }
-
-        function cambiarTab(evento, tabId) {
-            const botones = document.querySelectorAll(".tab-btn");
-            botones.forEach(btn => btn.classList.remove("active"));
-            
-            const contenidos = document.querySelectorAll(".tab-content");
-            contenidos.forEach(cont => cont.classList.remove("active"));
-            
-            evento.currentTarget.classList.add("active");
-            document.getElementById(tabId).classList.add("active");
         }
 
         function cambiarTab(evento, tabId) {
@@ -489,57 +497,55 @@
             });
         }
 
-  function calcularGastosRegulares() {
-    const contenedor = document.getElementById("contenedorFijos");
-    contenedor.innerHTML = "";
+        function calcularGastosRegulares() {
+            const contenedor = document.getElementById("contenedorFijos");
+            contenedor.innerHTML = "";
 
-    // Filtramos ÚNICAMENTE por las dos categorías específicas de servicios
-    const registrosFijos = datosGlobales.filter(d => {
-        if (d["Gasto/Ingreso"] !== "Gasto") return false;
-        const tipoGasto = String(d["Tipo de gasto"]).toLowerCase().trim();
-        
-        return tipoGasto === "servicios hogar" || 
-               tipoGasto === "servicios míos" || 
-               tipoGasto === "servicios mios";
-    });
+            const registrosFijos = datosGlobales.filter(d => {
+                if (d["Gasto/Ingreso"] !== "Gasto") return false;
+                const tipoGasto = String(d["Tipo de gasto"]).toLowerCase().trim();
+                
+                return tipoGasto === "servicios hogar" || 
+                       tipoGasto === "servicios míos" || 
+                       tipoGasto === "servicios mios";
+            });
 
-    if(registrosFijos.length === 0) {
-        contenedor.innerHTML = "<p class='no-data'>No se detectaron servicios registrados.</p>";
-        return;
-    }
+            if(registrosFijos.length === 0) {
+                contenedor.innerHTML = "<p class='no-data'>No se detectaron servicios registrados.</p>";
+                return;
+            }
 
-    const ultimosFijosMap = {};
-    registrosFijos.forEach(r => {
-        const conceptoNormalizado = r["Concepto"].trim();
-        const fechaMes = r["Mes"];
-        const tipoGasto = r["Tipo de gasto"].trim(); // Guardamos el tipo para mostrarlo en la tarjeta
-        
-        if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
-            ultimosFijosMap[conceptoNormalizado] = {
-                monto: r["Valor de cuota"] || 0,
-                mes: fechaMes,
-                categoria: tipoGasto
-            };
-        }
-    });
+            const ultimosFijosMap = {};
+            registrosFijos.forEach(r => {
+                const conceptoNormalizado = r["Concepto"].trim();
+                const fechaMes = r["Mes"];
+                const tipoGasto = r["Tipo de gasto"].trim();
+                
+                if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
+                    ultimosFijosMap[conceptoNormalizado] = {
+                        monto: r["Valor de cuota"] || 0,
+                        mes: fechaMes,
+                        categoria: tipoGasto
+                    };
+                }
+            });
 
-    Object.keys(ultimosFijosMap).forEach(concepto => {
-        const itemData = ultimosFijosMap[concepto];
-        const item = document.createElement("div");
-        item.className = "fijo-item";
-        
-        const [anio, m] = itemData.mes.split("-");
+            Object.keys(ultimosFijosMap).forEach(concepto => {
+                const itemData = ultimosFijosMap[concepto];
+                const item = document.createElement("div");
+                item.className = "fijo-item";
+                
+                const [anio, m] = itemData.mes.split("-");
 
-        // Le sumamos la etiqueta de la categoría para que veas rápido a cuál pertenece cada uno
-        item.innerHTML = `
-            <div class="fijo-meta">
-                <span class="fijo-nombre">${concepto} <small style="opacity: 0.6; font-size: 0.75em;">(${itemData.categoria})</small></span>
-                <span class="fijo-fecha">Último: ${m}/${anio}</span>
-            </div>
-            <div class="fijo-monto">${fMoneda(itemData.monto)}</div>
-        `;
-        contenedor.appendChild(item);
-    });
+                item.innerHTML = `
+                    <div class="fijo-meta">
+                        <span class="fijo-nombre">${concepto} <small style="opacity: 0.6; font-size: 0.75em;">(${itemData.categoria})</small></span>
+                        <span class="fijo-fecha">Último: ${m}/${anio}</span>
+                    </div>
+                    <div class="fijo-monto">${fMoneda(itemData.monto)}</div>
+                `;
+                contenedor.appendChild(item);
+            });
         }
 
         inicializarDashboard();
