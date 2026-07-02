@@ -251,3 +251,42 @@ table td:first-child, table th:first-child {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
 }
+/* ==========================================================================
+   PERSONALIZACIÓN DE LA BARRA DE DESPLAZAMIENTO (SCROLLBAR)
+   Aesthetic: Minimalista, frío y adaptado a Glassmorphism
+   ========================================================================== */
+
+/* 1. Para Navegadores basados en WebKit (Chrome, Safari, Edge, Opera) */
+
+/* Espacio total de la barra (horizontal y vertical) */
+::-webkit-scrollbar {
+    width: 6px;  /* Ancho de la barra vertical */
+    height: 6px; /* Alto de la barra horizontal (para el scroll de las tablas) */
+}
+
+/* El fondo por donde corre la barra (Track) */
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03); /* Casi invisible para no ensuciar el diseño */
+    border-radius: 10px;
+}
+
+/* La barrita que arrastrás (Thumb) */
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2); /* Blanco translúcido estilo glass */
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Delicado borde frío */
+    transition: background 0.3s ease;
+}
+
+/* Cuando pasás el mouse por encima o la estás arrastrando */
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.4); /* Se ilumina sutilmente al interactuar */
+}
+
+/* 2. Soporte Estándar Moderno (Para Firefox) */
+html, 
+.table-responsive {
+    scrollbar-width: thin; /* La hace delgada automáticamente */
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.03); /* (Color de barra) (Color de fondo) */
+}
