@@ -14,6 +14,21 @@
         <header class="glass-card header-main">
             <h1>Control Financiero</h1>
             <p>Análisis de Gastos e Ingresos Proyectados</p>
+            
+            <div class="kpi-container">
+                <div class="kpi-box">
+                    <span class="kpi-title">Gasto Fijo Hogar</span>
+                    <span id="kpiHogar" class="kpi-value">$ 0</span>
+                </div>
+                <div class="kpi-box">
+                    <span class="kpi-title">% Gasto Tarjeta</span>
+                    <span id="kpiTarjetaPorc" class="kpi-value">0%</span>
+                </div>
+                <div class="kpi-box">
+                    <span class="kpi-title">Gastos Placer</span>
+                    <span id="kpiPlacer" class="kpi-value">$ 0</span>
+                </div>
+            </div>
         </header>
 
         <section class="glass-card">
@@ -31,15 +46,24 @@
         </section>
 
         <section class="glass-card table-section">
-            <h2>Resumen Métricas por Mes</h2>
+            <h2>Cuadro de Mando Mensual</h2>
             <div class="table-responsive">
                 <table id="tablaComparativa">
                     <thead>
                         <tr>
-                            <th>Mes</th>
-                            <th>Total Gasto</th>
-                            <th>En Tarjeta</th>
-                            <th>Sobrante</th>
+                            <th>Meses</th>
+                            <th>Gasto total</th>
+                            <th>En cuenta</th>
+                            <th>En tarjeta</th>
+                            <th>En Mercado Crédito</th>
+                            <th>Sueldo</th>
+                            <th>% Gasto Tarjeta</th>
+                            <th>Gasto hogar</th>
+                            <th>Servicios Mios</th>
+                            <th>% Hogar/Sueldo</th>
+                            <th>% Placer</th>
+                            <th>Gastos de placer</th>
+                            <th>Sobrante, resto</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,11 +72,10 @@
             </div>
         </section>
 
-
         <section class="glass-card filter-section">
             <label for="selectorMesDetalle">Ver detalle del mes:</label>
             <select id="selectorMesDetalle" onchange="actualizarDetalleMensual()">
-                </select>
+            </select>
         </section>
 
         <section class="glass-card">
@@ -69,7 +92,6 @@
             </div>
         </section>
 
-
         <section class="glass-card cuotas-section">
             <h2>💳 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">Compromisos futuros en Tarjeta de Crédito</p>
@@ -77,10 +99,16 @@
                 </div>
         </section>
 
+        <section class="glass-card fijos-section">
+            <h2>🏠 Gastos Regulares y Servicios</h2>
+            <p class="subtitle">Último valor registrado para previsión mensual</p>
+            <div id="contenedorFijos" class="fijos-list">
+                </div>
+        </section>
+
     </div>
 
     <script>
-        // CONFIGURACIÓN: Pega acá la URL de tu Google Apps Script de implementación
         const URL_API = "https://script.google.com/macros/s/AKfycbxgrRahTUilBkV4ZzEwX7UUHO6i08ZuLFtJSJOwwe5NtZ376PatHSVWsvViEknoi3Nz/exec";
 
         let datosGlobales = [];
@@ -98,14 +126,14 @@
                     return;
                 }
 
-                // 1. Cargar selectores y componentes estáticos
+                // 1. Cargar selectores dinámicos colocando el mes actual por default
                 poblarSelectorMeses();
                 
-                // 2. Renderizar Parte 1
+                // 2. Renderizar Históricos de la Parte 1
                 construirGraficoHistorico();
                 construirTablaComparativa();
 
-                // 3. Renderizar Parte 2 & 3
+                // 3. Renderizar Detalle de Mes Seleccionado (Partes 2, 3 y 4)
                 actualizarDetalleMensual();
 
             } catch (error) {
@@ -116,35 +144,43 @@
         // --- HELPER PARA FORMATEAR MONEDA ---
         const fMoneda = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
 
-        // --- PROCESAMIENTO DE DATOS ---
+        // --- PROCESAMIENTO DE CRONOLOGÍAS ---
         function obtenerMesesUnicos() {
             let meses = [...new Set(datosGlobales.map(d => d.Mes.substring(0, 7)))];
-            return meses.sort(); // Ordena cronológicamente YYYY-MM
+            return meses.sort(); // Orden cronológico estricto YYYY-MM
         }
 
         function poblarSelectorMeses() {
             const selector = document.getElementById("selectorMesDetalle");
             const meses = obtenerMesesUnicos();
             selector.innerHTML = "";
+            
             meses.forEach(mes => {
                 const option = document.createElement("option");
                 option.value = mes;
-                // Transforma '2026-07' en '07/2026' para mantener tu estética limpia
                 const [anio, m] = mes.split("-");
                 option.textContent = `${m}/${anio}`;
                 selector.appendChild(option);
             });
-            // Seleccionar el mes actual indexado por defecto si existe
-            if(meses.length > 0) selector.value = meses[0];
+
+            // Lógica Default: Establecer Mes Actual dinámico (en formato YYYY-MM)
+            const hoy = new Date();
+            const mesActualString = hoy.getFullYear() + "-" + String(hoy.getMonth() + 1).padStart(2, '0');
+
+            if (meses.includes(mesActualString)) {
+                selector.value = mesActualString;
+            } else if (meses.length > 0) {
+                // Si el mes actual no tiene datos cargados, se para en el último del historial
+                selector.value = meses[meses.length - 1];
+            }
         }
 
-        // ================= RENDERS PARTE 1 =================
+        // ================= CONSTRUCCIÓN CUADRO DE MANDO HISTÓRICO =================
         function construirGraficoHistorico() {
             const meses = obtenerMesesUnicos();
             const tipoFiltro = document.getElementById("selectorHistorico").value;
 
             const datosSueldo = meses.map(mes => {
-                // Suma los ingresos correspondientes a ese mes de impacto real
                 return datosGlobales.filter(d => d.Mes.startsWith(mes) && d["Gasto/Ingreso"] === "Ingreso")
                                     .reduce((acc, curr) => acc + (curr["Valor de cuota"] || 0), 0);
             });
@@ -155,7 +191,6 @@
             });
 
             const ctx = document.getElementById('graficoHistorico').getContext('2d');
-            
             if(graficoHistObj) graficoHistObj.destroy();
 
             let datasets = [];
@@ -163,7 +198,7 @@
                 datasets.push({
                     label: 'Sueldo / Ingreso',
                     data: datosSueldo,
-                    backgroundColor: 'rgba(244, 143, 177, 0.6)', // Rosa pastel claro
+                    backgroundColor: 'rgba(244, 143, 177, 0.6)',
                     borderColor: '#f48fb1',
                     borderWidth: 2,
                     borderRadius: 8
@@ -173,7 +208,7 @@
                 datasets.push({
                     label: 'Gasto Total',
                     data: datosGastos,
-                    backgroundColor: 'rgba(216, 27, 96, 0.7)', // Magenta intenso de tu excel
+                    backgroundColor: 'rgba(216, 27, 96, 0.7)',
                     borderColor: '#d81b60',
                     borderWidth: 2,
                     borderRadius: 8
@@ -207,34 +242,74 @@
             tbody.innerHTML = "";
             const meses = obtenerMesesUnicos();
 
+            let kpiHogarVal = 0;
+            let kpiTarjetaPorcVal = 0;
+            let kpiPlacerVal = 0;
+            
+            const mesActualSeleccionado = document.getElementById("selectorMesDetalle")?.value || meses[0];
+
             meses.forEach(mes => {
                 const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mes));
                 
-                const gastoTotal = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-                const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && d["Tipo de pago"] === "Tarjeta de Crédito").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
                 const sueldo = registrosMes.filter(d => d["Gasto/Ingreso"] === "Ingreso").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const gastoTotal = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                
+                const enCuenta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("cuenta")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const enMercadoCredito = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("mercado")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                
+                const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("hogar")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().includes("servicio") || String(d["Concepto"]).toLowerCase().includes("servicio"))).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+                const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+
+                const porcGastoTarjeta = gastoTotal > 0 ? Math.round((enTarjeta / gastoTotal) * 100) : 0;
+                const porcHogarSueldo = sueldo > 0 ? Math.round((gastoHogar / sueldo) * 100) : 0;
+                const porcPlacer = gastoTotal > 0 ? Math.round((gastosPlacer / gastoTotal) * 100) : 0;
+                
                 const sobrante = sueldo - gastoTotal;
+
+                if (mes === mesActualSeleccionado) {
+                    kpiHogarVal = gastoHogar;
+                    kpiTarjetaPorcVal = porcGastoTarjeta;
+                    kpiPlacerVal = gastosPlacer;
+                }
 
                 const tr = document.createElement("tr");
                 const [a, m] = mes.split("-");
                 
+                const styleSobrante = sobrante >= 0 
+                    ? "background-color: rgba(74, 222, 128, 0.2); color: #4ade80; font-weight: bold; text-align: right;" 
+                    : "background-color: rgba(220, 38, 38, 0.3); color: #f87171; font-weight: bold; text-align: right;";
+
                 tr.innerHTML = `
                     <td><strong>${m}/${a}</strong></td>
                     <td>${fMoneda(gastoTotal)}</td>
+                    <td>${fMoneda(enCuenta)}</td>
                     <td>${fMoneda(enTarjeta)}</td>
-                    <td style="color: ${sobrante >= 0 ? '#4ade80' : '#f87171'}; font-weight: bold;">${fMoneda(sobrante)}</td>
+                    <td>${fMoneda(enMercadoCredito)}</td>
+                    <td>${fMoneda(sueldo)}</td>
+                    <td>${porcGastoTarjeta}%</td>
+                    <td>${fMoneda(gastoHogar)}</td>
+                    <td>${fMoneda(serviciosMios)}</td>
+                    <td>${porcHogarSueldo}%</td>
+                    <td>${porcPlacer}%</td>
+                    <td>${fMoneda(gastosPlacer)}</td>
+                    <td style="${styleSobrante}">${fMoneda(sobrante)}</td>
                 `;
                 tbody.appendChild(tr);
             });
+
+            document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
+            document.getElementById("kpiTarjetaPorc").textContent = `${kpiTarjetaPorcVal}%`;
+            document.getElementById("kpiPlacer").textContent = fMoneda(kpiPlacerVal);
         }
 
-
-        // ================= RENDERS PARTE 2 (FILTRADA) =================
+        // ================= ENTRADA DE FILTRADO DETALLADO MENSUAL =================
         function actualizarDetalleMensual() {
             const mesSeleccionado = document.getElementById("selectorMesDetalle").value;
             const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mesSeleccionado) && d["Gasto/Ingreso"] === "Gasto");
 
-            // 1. Agrupar por Medio de Pago (Dona / Pie moderno)
+            // 1. Gráfico de Medios de Pago
             const mediosMap = {};
             registrosMes.forEach(r => {
                 const mp = r["Tipo de pago"] || "Otros";
@@ -260,7 +335,7 @@
                 }
             });
 
-            // 2. Agrupar por Tipo de Gasto (Barras Horizontales Modernas)
+            // 2. Gráfico de Tipos de Gasto
             const tiposMap = {};
             registrosMes.forEach(r => {
                 const tg = r["Tipo de gasto"] || "General";
@@ -283,7 +358,7 @@
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // Hace las barras horizontales hiper corporativas
+                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
@@ -294,10 +369,11 @@
                 }
             });
 
-            // Renderizar Parte 3 en base a este mes de corte
+            // 3. Render de Alertas Futuras e Interfaz de KPIs
+            construirTablaComparativa();
             calcularProyeccionCuotas(mesSeleccionado);
+            calcularGastosRegulares();
         }
-
 
         // ================= RENDERS PARTE 3 (CUOTAS FUTURAS) =================
         function calcularProyeccionCuotas(mesCorte) {
@@ -305,8 +381,7 @@
             contenedor.innerHTML = "";
 
             const meses = obtenerMesesUnicos();
-            // Filtrar solo meses posteriores al seleccionado
-            const mesesFuturos = meses.filter(m => m > mesCorte).slice(0, 4); // Ver los próximos 4 meses
+            const mesesFuturos = meses.filter(m => m > mesCorte).slice(0, 4);
 
             if(mesesFuturos.length === 0) {
                 contenedor.innerHTML = "<p class='no-data'>No hay cuotas programadas para los meses siguientes.</p>";
@@ -330,15 +405,69 @@
                 item.innerHTML = `
                     <div class="cuota-meta">
                         <span class="cuota-mes">${m}/${a}</span>
-                        <span class="cuota-cant">${cuotasTarjeta.length} compras pendientes</span>
+                        <span class="cuota-cant">${cuotasTarjeta.length} compras pendientes</span>  
                     </div>
                     <div class="cuota-monto">${fMoneda(totalMesFuturo)}</div>
+                `;
+                
+                contenedor.appendChild(item);
+            });
+        }
+
+        // ================= RENDERS PARTE 4 (GASTOS REGULARES RECURRENTES) =================
+        function calcularGastosRegulares() {
+            const contenedor = document.getElementById("contenedorFijos");
+            contenedor.innerHTML = "";
+
+            const palabrasClaveFijos = ["alquiler", "yoga", "luz", "gas", "expensas", "abl", "telefono", "internet", "sube", "spotify", "apple"];
+            
+            const registrosFijos = datosGlobales.filter(d => {
+                if (d["Gasto/Ingreso"] !== "Gasto") return false;
+                const concepto = String(d["Concepto"]).toLowerCase();
+                const tipoGasto = String(d["Tipo de gasto"]).toLowerCase();
+                
+                return tipoGasto.includes("fijo") || 
+                       tipoGasto.includes("servicio") || 
+                       palabrasClaveFijos.some(palabra => concepto.includes(palabra));
+            });
+
+            if(registrosFijos.length === 0) {
+                contenedor.innerHTML = "<p class='no-data'>No se detectaron conceptos fijos frecuentes.</p>";
+                return;
+            }
+
+            const ultimosFijosMap = {};
+            registrosFijos.forEach(r => {
+                const conceptoNormalizado = r["Concepto"].trim();
+                const fechaMes = r["Mes"];
+                
+                if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
+                    ultimosFijosMap[conceptoNormalizado] = {
+                        monto: r["Valor de cuota"] || 0,
+                        mes: fechaMes
+                    };
+                }
+            });
+
+            Object.keys(ultimosFijosMap).forEach(concepto => {
+                const itemData = ultimosFijosMap[concepto];
+                const item = document.createElement("div");
+                item.className = "fijo-item";
+                
+                const [anio, m] = itemData.mes.split("-");
+
+                item.innerHTML = `
+                    <div class="fijo-meta">
+                        <span class="fijo-nombre">${concepto}</span>
+                        <span class="fijo-fecha">Último: ${m}/${anio}</span>
+                    </div>
+                    <div class="fijo-monto">${fMoneda(itemData.monto)}</div>
                 `;
                 contenedor.appendChild(item);
             });
         }
 
-        // Ejecutar todo al iniciar
+        // Ejecutar todo el setup al cargar la ventana
         inicializarDashboard();
     </script>
 </body>
