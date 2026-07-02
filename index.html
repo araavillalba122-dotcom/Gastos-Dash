@@ -45,32 +45,66 @@
             </div>
         </section>
 
-        <section class="glass-card table-section">
-            <h2>Cuadro de Mando Mensual</h2>
-            <div class="table-responsive">
-                <table id="tablaComparativa">
-                    <thead>
-                        <tr>
-                            <th>Meses</th>
-                            <th>Gasto total</th>
-                            <th>En cuenta</th>
-                            <th>En tarjeta</th>
-                            <th>En Mercado Crédito</th>
-                            <th>Sueldo</th>
-                            <th>% Gasto Tarjeta</th>
-                            <th>Gasto hogar</th>
-                            <th>Servicios Mios</th>
-                            <th>% Hogar/Sueldo</th>
-                            <th>% Placer</th>
-                            <th>Gastos de placer</th>
-                            <th>Sobrante, resto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            </div>
-        </section>
+<section class="glass-card table-section">
+    <h2>Cuadro de Mando Mensual</h2>
+    
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="cambiarTab(event, 'tab-balance')">Balance</button>
+        <button class="tab-btn" onclick="cambiarTab(event, 'tab-medios')">Medios Pago</button>
+        <button class="tab-btn" onclick="cambiarTab(event, 'tab-categorias')">Distribución</button>
+    </div>
+
+    <div id="tab-balance" class="tab-content active">
+        <div class="table-responsive">
+            <table id="tablaBalance">
+                <thead>
+                    <tr>
+                        <th>Mes</th>
+                        <th>Sueldo</th>
+                        <th>Gasto Total</th>
+                        <th>Sobrante</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-medios" class="tab-content">
+        <div class="table-responsive">
+            <table id="tablaMedios">
+                <thead>
+                    <tr>
+                        <th>Mes</th>
+                        <th>En Cuenta</th>
+                        <th>En Tarjeta</th>
+                        <th>Mercado Crédito</th>
+                        <th>% Tarjeta</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-categorias" class="tab-content">
+        <div class="table-responsive">
+            <table id="tablaCategorias">
+                <thead>
+                    <tr>
+                        <th>Mes</th>
+                        <th>Gasto Hogar</th>
+                        <th>Servicios</th>
+                        <th>% Hogar/Sueldo</th>
+                        <th>Gastos Placer</th>
+                        <th>% Placer</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</section>
 
         <section class="glass-card filter-section">
             <label for="selectorMesDetalle">Ver detalle del mes:</label>
