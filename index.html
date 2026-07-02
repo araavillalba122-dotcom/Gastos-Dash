@@ -482,57 +482,57 @@
             });
         }
 
-        function calcularGastosRegulares() {
-            const contenedor = document.getElementById("contenedorFijos");
-            contenedor.innerHTML = "";
+  function calcularGastosRegulares() {
+    const contenedor = document.getElementById("contenedorFijos");
+    contenedor.innerHTML = "";
 
-            const palabrasClaveFijos = ["alquiler", "yoga", "luz", "gas", "expensas", "abl", "telefono", "internet", "sube", "spotify", "apple"];
-            
-            const registrosFijos = datosGlobales.filter(d => {
-                if (d["Gasto/Ingreso"] !== "Gasto") return false;
-                const concepto = String(d["Concepto"]).toLowerCase();
-                const tipoGasto = String(d["Tipo de gasto"]).toLowerCase();
-                
-                return tipoGasto.includes("fijo") || 
-                       tipoGasto.includes("servicio") || 
-                       palabrasClaveFijos.some(palabra => concepto.includes(palabra));
-            });
+    // Filtramos ÚNICAMENTE por las dos categorías específicas de servicios
+    const registrosFijos = datosGlobales.filter(d => {
+        if (d["Gasto/Ingreso"] !== "Gasto") return false;
+        const tipoGasto = String(d["Tipo de gasto"]).toLowerCase().trim();
+        
+        return tipoGasto === "servicios hogar" || 
+               tipoGasto === "servicios míos" || 
+               tipoGasto === "servicios mios";
+    });
 
-            if(registrosFijos.length === 0) {
-                contenedor.innerHTML = "<p class='no-data'>No se detectaron conceptos fijos frecuentes.</p>";
-                return;
-            }
+    if(registrosFijos.length === 0) {
+        contenedor.innerHTML = "<p class='no-data'>No se detectaron servicios registrados.</p>";
+        return;
+    }
 
-            const ultimosFijosMap = {};
-            registrosFijos.forEach(r => {
-                const conceptoNormalizado = r["Concepto"].trim();
-                const fechaMes = r["Mes"];
-                
-                if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
-                    txtMonto = r["Valor de cuota"] || 0;
-                    ultimosFijosMap[conceptoNormalizado] = {
-                        monto: txtMonto,
-                        mes: fechaMes
-                    };
-                }
-            });
+    const ultimosFijosMap = {};
+    registrosFijos.forEach(r => {
+        const conceptoNormalizado = r["Concepto"].trim();
+        const fechaMes = r["Mes"];
+        const tipoGasto = r["Tipo de gasto"].trim(); // Guardamos el tipo para mostrarlo en la tarjeta
+        
+        if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
+            ultimosFijosMap[conceptoNormalizado] = {
+                monto: r["Valor de cuota"] || 0,
+                mes: fechaMes,
+                categoria: tipoGasto
+            };
+        }
+    });
 
-            Object.keys(ultimosFijosMap).forEach(concepto => {
-                const itemData = ultimosFijosMap[concepto];
-                const item = document.createElement("div");
-                item.className = "fijo-item";
-                
-                const [anio, m] = itemData.mes.split("-");
+    Object.keys(ultimosFijosMap).forEach(concepto => {
+        const itemData = ultimosFijosMap[concepto];
+        const item = document.createElement("div");
+        item.className = "fijo-item";
+        
+        const [anio, m] = itemData.mes.split("-");
 
-                item.innerHTML = `
-                    <div class="fijo-meta">
-                        <span class="fijo-nombre">${concepto}</span>
-                        <span class="fijo-fecha">Último: ${m}/${anio}</span>
-                    </div>
-                    <div class="fijo-monto">${fMoneda(itemData.monto)}</div>
-                `;
-                contenedor.appendChild(item);
-            });
+        // Le sumamos la etiqueta de la categoría para que veas rápido a cuál pertenece cada uno
+        item.innerHTML = `
+            <div class="fijo-meta">
+                <span class="fijo-nombre">${concepto} <small style="opacity: 0.6; font-size: 0.75em;">(${itemData.categoria})</small></span>
+                <span class="fijo-fecha">Último: ${m}/${anio}</span>
+            </div>
+            <div class="fijo-monto">${fMoneda(itemData.monto)}</div>
+        `;
+        contenedor.appendChild(item);
+    });
         }
 
         inicializarDashboard();
