@@ -159,12 +159,36 @@
                 return;
             }
 
-            datosGlobales = objetoRespuesta.datos || [];
-            const ultimaFecha = objetoRespuesta.ultimaActualizacion || "Sin registros";
+            // Normalizamos las propiedades del objeto para mitigar discrepancias de mayúsculas en la hoja
+            datosGlobales = (objetoRespuesta.datos || []).map(d => {
+                // Asegurar formato YYYY-MM para la propiedad Mes independientemente de cómo venga del Sheets
+                let mesFormateado = "";
+                if (d.Mes || d.mes) {
+                    const strMes = String(d.Mes || d.mes);
+                    if (strMes.includes("-")) {
+                        mesFormateado = strMes.substring(0, 7); // Caso YYYY-MM-DD
+                    } else if (strMes.includes("/")) {
+                        const partes = strMes.split("/"); // Caso DD/MM/YYYY
+                        if (partes[2] && partes[1]) {
+                            mesFormateado = `${partes[2].substring(0,4)}-${partes[1].padStart(2, '0')}`;
+                        }
+                    }
+                }
+                return {
+                    Mes: mesFormateado,
+                    "Gasto/Ingreso": d["Gasto/Ingreso"] || d["gasto/ingreso"] || "",
+                    "Valor de cuota": Number(d["Valor de cuota"] || d["valor de cuota"] || d["Valor Cuota"] || d["valor cuota"] || 0),
+                    "Tipo de pago": d["Tipo de pago"] || d["tipo de pago"] || "",
+                    "Tipo de gasto": d["Tipo de gasto"] || d["tipo de gasto"] || "",
+                    "Concepto": d["Concepto"] || d["concepto"] || ""
+                };
+            }).filter(d => d.Mes !== ""); // Filtramos registros corruptos sin mes válido
 
+            const ultimaFecha = objetoRespuesta.ultimaActualizacion || "Sin registros";
             document.getElementById("fechaActualizacion").textContent = ultimaFecha;
             
             poblarSelectorMeses();
+            construirTablaComparativa(); // <-- CRÍTICO: Ejecutar antes para mapear KPIs iniciales
             construirGraficoHistorico();
             actualizarDetalleMensual(); 
 
@@ -177,7 +201,7 @@
     const fMoneda = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(val);
 
     function obtenerMesesUnicos() {
-        let meses = [...new Set(datosGlobales.map(d => d.Mes.substring(0, 7)))];
+        let meses = [...new Set(datosGlobales.map(d => d.Mes))];
         return meses.sort();
     }
 
@@ -190,8 +214,8 @@
         meses.forEach(mes => {
             const option = document.createElement("option");
             option.value = mes;
-            const [anio, m] = mes.split("-");
-            option.textContent = `${m}/${anio}`;
+            const partes = mes.split("-");
+            option.textContent = `${partes[1]}/${partes[0]}`;
             selector.appendChild(option);
         });
 
@@ -213,12 +237,12 @@
         const tipoFiltro = selector.value;
 
         const datosSueldo = meses.map(mes => {
-            return datosGlobales.filter(d => d.Mes.startsWith(mes) && d["Gasto/Ingreso"] === "Ingreso")
+            return datosGlobales.filter(d => d.Mes === mes && d["Gasto/Ingreso"] === "Ingreso")
                                 .reduce((acc, curr) => acc + (curr["Valor de cuota"] || 0), 0);
         });
 
         const datosGastos = meses.map(mes => {
-            return datosGlobales.filter(d => d.Mes.startsWith(mes) && d["Gasto/Ingreso"] === "Gasto")
+            return datosGlobales.filter(d => d.Mes === mes && d["Gasto/Ingreso"] === "Gasto")
                                 .reduce((acc, curr) => acc + (curr["Valor de cuota"] || 0), 0);
         });
 
@@ -286,23 +310,22 @@
 
         let kpiHogarVal = 0;
         let kpiTarjetaPorcVal = 0;
-        let kpiPlacerVal = 0;
         
-        const mesActualSeleccionado = document.getElementById("selectorMesDetalle")?.value || meses[0];
+        const mesActualSeleccionado = document.getElementById("selectorMesDetalle")?.value || meses[meses.length - 1];
 
         meses.forEach(mes => {
-            const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mes));
+            const registrosMes = datosGlobales.filter(d => d.Mes === mes);
             
-            const sueldo = registrosMes.filter(d => d["Gasto/Ingreso"] === "Ingreso").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-            const gastoTotal = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+            const sueldo = registrosMes.filter(d => d["Gasto/Ingreso"] === "Ingreso").reduce((a,c) => a + c["Valor de cuota"], 0);
+            const gastoTotal = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto").reduce((a,c) => a + c["Valor de cuota"], 0);
             
-            const enCuenta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("cuenta")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-            const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-            const enMercadoCredito = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("mercado")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+            const enCuenta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("cuenta")).reduce((a,c) => a + c["Valor de cuota"], 0);
+            const enTarjeta = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")).reduce((a,c) => a + c["Valor de cuota"], 0);
+            const enMercadoCredito = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("mercado")).reduce((a,c) => a + c["Valor de cuota"], 0);
             
-            const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios hogar").reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-            const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
-            const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+            const gastoHogar = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios hogar").reduce((a,c) => a + c["Valor de cuota"], 0);
+            const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + c["Valor de cuota"], 0);
+            const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + c["Valor de cuota"], 0);
 
             let sueldoReferencia = sueldo;
 
@@ -317,8 +340,8 @@
                 const mesAnteriorString = anioAntNum + "-" + String(mesAntNum).padStart(2, '0');
                 
                 sueldoReferencia = datosGlobales
-                    .filter(d => d.Mes.startsWith(mesAnteriorString) && d["Gasto/Ingreso"] === "Ingreso")
-                    .reduce((a, c) => a + (c["Valor de cuota"] || 0), 0);
+                    .filter(d => d.Mes === mesAnteriorString && d["Gasto/Ingreso"] === "Ingreso")
+                    .reduce((a, c) => a + c["Valor de cuota"], 0);
             }
 
             const porcGastoTarjeta = sueldoReferencia > 0 ? Math.round((enTarjeta / sueldoReferencia) * 100) : 0;
@@ -337,13 +360,12 @@
                 }
                 const mesSiguienteString = anioSigNum + "-" + String(mesSigNum).padStart(2, '0');
 
-                const registrosMesSiguiente = datosGlobales.filter(d => d.Mes.startsWith(mesSiguienteString));
+                const registrosMesSiguiente = datosGlobales.filter(d => d.Mes === mesSiguienteString);
                 kpiTarjetaPorcVal = registrosMesSiguiente
                     .filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta"))
-                    .reduce((a, c) => a + (c["Valor de cuota"] || 0), 0);
+                    .reduce((a, c) => a + c["Valor de cuota"], 0);
 
                 kpiHogarVal = gastoHogar;
-                kpiPlacerVal = gastosPlacer;
             }
 
             const [anio, m] = mes.split("-");
@@ -403,12 +425,12 @@
         const selector = document.getElementById("selectorMesDetalle");
         if (!selector || !selector.value) return;
         const mesSeleccionado = selector.value;
-        const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mesSeleccionado) && d["Gasto/Ingreso"] === "Gasto");
+        const registrosMes = datosGlobales.filter(d => d.Mes === mesSeleccionado && d["Gasto/Ingreso"] === "Gasto");
 
         const mediosMap = {};
         registrosMes.forEach(r => {
             const mp = r["Tipo de pago"] || "Otros";
-            mediosMap[mp] = (mediosMap[mp] || 0) + (r["Valor de cuota"] || 0);
+            mediosMap[mp] = (mediosMap[mp] || 0) + r["Valor de cuota"];
         });
 
         const canvasMedios = document.getElementById('graficoMediosPago');
@@ -436,7 +458,7 @@
         const tiposMap = {};
         registrosMes.forEach(r => {
             const tg = r["Tipo de gasto"] || "General";
-            tiposMap[tg] = (tiposMap[tg] || 0) + (r["Valor de cuota"] || 0);
+            tiposMap[tg] = (tiposMap[tg] || 0) + r["Valor de cuota"];
         });
 
         const canvasTipos = document.getElementById('graficoTiposGasto');
@@ -489,20 +511,20 @@
 
         mesesFuturos.forEach(mes => {
             const cuotasTarjeta = datosGlobales.filter(d => 
-                d.Mes.startsWith(mes) && 
+                d.Mes === mes && 
                 d["Gasto/Ingreso"] === "Gasto" && 
                 String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")
             );
 
-            const totalMesFuturo = cuotasTarjeta.reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
+            const totalMesFuturo = cuotasTarjeta.reduce((a,c) => a + c["Valor de cuota"], 0);
             const item = document.createElement("div");
             item.className = "cuota-futura-item";
             
-            const [a, m] = mes.split("-");
+            const partes = mes.split("-");
 
             item.innerHTML = `
                 <div class="cuota-meta">
-                    <span class="cuota-mes">${m}/${a}</span>
+                    <span class="cuota-mes">${partes[1]}/${partes[0]}</span>
                     <span class="cuota-cant">${cuotasTarjeta.length} consumos programados</span>  
                 </div>
                 <div class="cuota-monto">${fMoneda(totalMesFuturo)}</div>
@@ -519,7 +541,6 @@
         const registrosFijos = datosGlobales.filter(d => {
             if (d["Gasto/Ingreso"] !== "Gasto") return false;
             const tipoGasto = String(d["Tipo de gasto"]).toLowerCase().trim();
-            
             return tipoGasto === "servicios hogar" || 
                    tipoGasto === "servicios míos" || 
                    tipoGasto === "servicios mios";
@@ -538,7 +559,7 @@
             
             if (!ultimosFijosMap[conceptoNormalizado] || fechaMes > ultimosFijosMap[conceptoNormalizado].mes) {
                 ultimosFijosMap[conceptoNormalizado] = {
-                    monto: r["Valor de cuota"] || 0,
+                    monto: r["Valor de cuota"],
                     mes: fechaMes,
                     categoria: tipoGasto
                 };
@@ -550,12 +571,12 @@
             const item = document.createElement("div");
             item.className = "fijo-item";
             
-            const [anio, m] = itemData.mes.split("-");
+            const partes = itemData.mes.split("-");
 
             item.innerHTML = `
                 <div class="fijo-meta">
                     <span class="fijo-nombre">${concepto} <small style="opacity: 0.6; font-size: 0.75em;">(${itemData.categoria})</small></span>
-                    <span class="fijo-fecha">Último: ${m}/${anio}</span>
+                    <span class="fijo-fecha">Último: ${partes[1]}/${partes[0]}</span>
                 </div>
                 <div class="fijo-monto">${fMoneda(itemData.monto)}</div>
             `;
