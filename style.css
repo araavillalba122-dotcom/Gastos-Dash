@@ -290,3 +290,15 @@ html,
     scrollbar-width: thin; /* La hace delgada automáticamente */
     scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.03); /* (Color de barra) (Color de fondo) */
 }
+
+.status-actualizacion {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: right;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+#fechaActualizacion {
+    color: #4ade80; /* Un verde sutil neón estilo glass que resalta que está ok */
+    font-weight: bold;
+}
