@@ -11,7 +11,7 @@
 
     <div class="app-container">
         
-      <header class="glass-card header-main">
+        <header class="glass-card header-main">
             <h1>Control Financiero</h1>
             <p>Análisis de Gastos e Ingresos Proyectados</p>
             
@@ -388,7 +388,6 @@
         if(document.getElementById("kpiTarjetaPorc")) document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
     }
 
-    // LÍNEA CORREGIDA AQUÍ: Cambiado 'contents' por 'contenidos'
     function cambiarTab(evento, tabId) {
         const botones = document.querySelectorAll(".tab-btn");
         botones.forEach(btn => btn.classList.remove("active"));
