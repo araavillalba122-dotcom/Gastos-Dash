@@ -24,6 +24,8 @@
                     <span class="kpi-title">Tarjeta Próximo Mes</span>
                     <span id="kpiTarjetaPorc" class="kpi-value">$ 0</span>
                 </div>
+                <div class="status-actualizacion">
+    Último consumo registrado: <span id="fechaActualizacion">Cargando...</span>
             </div>
         </header>
 
@@ -144,22 +146,33 @@
     let graficoMediosObj = null;
     let graficoTiposObj = null;
 
+    // 1. CORREGIDA: Ahora lee de forma separada los registros y la fecha de control
     async function inicializarDashboard() {
         try {
             const respuesta = await fetch(URL_API);
-            datosGlobales = await respuesta.json();
+            const objetoRespuesta = await respuesta.json();
             
-            if(datosGlobales.error) {
-                console.error(datosGlobales.error);
+            if(objetoRespuesta.error) {
+                console.error("Error devuelto por la API:", objetoRespuesta.error);
+                document.getElementById("fechaActualizacion").textContent = "Error de API";
                 return;
             }
 
+            // Separamos los datos de las tablas del indicador de fecha
+            datosGlobales = objetoRespuesta.datos || [];
+            const ultimaFecha = objetoRespuesta.ultimaActualizacion || "Sin registros";
+
+            // Colocamos el texto de la última actualización en el cartelito del Header
+            document.getElementById("fechaActualizacion").textContent = ultimaFecha;
+            
+            // Renderizamos los componentes con los datos limpios
             poblarSelectorMeses();
             construirGraficoHistorico();
-            actualizarDetalleMensual(); // Esta función ya se encarga de disparar todo el resto en cadena
+            actualizarDetalleMensual(); 
 
         } catch (error) {
-            console.error("Error cargando el dashboard:", error);
+            console.error("Error crítico cargando el dashboard:", error);
+            document.getElementById("fechaActualizacion").textContent = "Error de conexión";
         }
     }
 
@@ -286,7 +299,6 @@
             const serviciosMios = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && (String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios míos" || String(d["Tipo de gasto"]).toLowerCase().trim() === "servicios mios")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
             const gastosPlacer = registrosMes.filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de gasto"]).toLowerCase().includes("placer")).reduce((a,c) => a + (c["Valor de cuota"] || 0), 0);
 
-            // --- LÓGICA DE COMODÍN FINANCIERO (SUELDO RESPALDO SI ES 0) ---
             let sueldoReferencia = sueldo;
 
             if (sueldoReferencia === 0) {
@@ -311,7 +323,6 @@
             const sobrante = sueldo - gastoTotal;
 
             if (mes === mesActualSeleccionado) {
-                // --- PROYECCIÓN DE TARJETA SIGUIENTE MES ---
                 const [anio, parteMes] = mes.split("-");
                 let mesSigNum = parseInt(parteMes, 10) + 1;
                 let anioSigNum = parseInt(anio, 10);
@@ -326,10 +337,7 @@
                     .filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta"))
                     .reduce((a, c) => a + (c["Valor de cuota"] || 0), 0);
 
-                // --- PROYECCIÓN FIJO SIGUIENTE MES ---
                 kpiHogarVal = gastoHogar;
-
-                // Gastos Placer
                 kpiPlacerVal = gastosPlacer;
             }
 
@@ -340,7 +348,6 @@
                 ? "background-color: rgba(74, 222, 128, 0.15); color: #4ade80; font-weight: bold;" 
                 : "background-color: rgba(220, 38, 38, 0.2); color: #f87171; font-weight: bold;";
 
-            // 1. Tabla Balance
             const trBalance = document.createElement("tr");
             trBalance.innerHTML = `
                 <td>${etiquetaMes}</td>
@@ -350,7 +357,6 @@
             `;
             tbodyBalance.appendChild(trBalance);
 
-            // 2. Tabla Medios de Pago
             const trMedios = document.createElement("tr");
             trMedios.innerHTML = `
                 <td>${etiquetaMes}</td>
@@ -361,7 +367,6 @@
             `;
             tbodyMedios.appendChild(trMedios);
 
-            // 3. Tabla Distribución
             const trCategorias = document.createElement("tr");
             trCategorias.innerHTML = `
                 <td>${etiquetaMes}</td>
@@ -383,7 +388,7 @@
         botones.forEach(btn => btn.classList.remove("active"));
         
         const contenidos = document.querySelectorAll(".tab-content");
-        contenidos.forEach(cont => cont.classList.remove("active"));
+        contents.forEach(cont => cont.classList.remove("active"));
         
         evento.currentTarget.classList.add("active");
         document.getElementById(tabId).classList.add("active");
@@ -393,7 +398,6 @@
         const mesSeleccionado = document.getElementById("selectorMesDetalle").value;
         const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mesSeleccionado) && d["Gasto/Ingreso"] === "Gasto");
 
-        // 1. LÓGICA: DISTRIBUCIÓN POR MEDIO DE PAGO (DONA)
         const mediosMap = {};
         registrosMes.forEach(r => {
             const mp = r["Tipo de pago"] || "Otros";
@@ -419,7 +423,6 @@
             }
         });
 
-        // 2. LÓGICA: ANÁLISIS POR TIPO DE GASTO (BARRAS HORIZONTALES)
         const tiposMap = {};
         registrosMes.forEach(r => {
             const tg = r["Tipo de gasto"] || "General";
@@ -453,13 +456,11 @@
             }
         });
 
-        // Disparamos las tablas y las alertas inferiores sincronizadas con el mes seleccionado
         construirTablaComparativa();
         calcularProyeccionCuotas(mesSeleccionado);
         calcularGastosRegulares();
     }
 
-    // 3. LÓGICA: ALERTA DE CUOTAS PENDIENTES
     function calcularProyeccionCuotas(mesCorte) {
         const contenedor = document.getElementById("contenedorCuotas");
         contenedor.innerHTML = "";
@@ -496,7 +497,6 @@
         });
     }
 
-    // 4. LÓGICA: HISTÓRICO EXCLUSIVO DE SERVICIOS HOGAR Y MÍOS
     function calcularGastosRegulares() {
         const contenedor = document.getElementById("contenedorFijos");
         contenedor.innerHTML = "";
@@ -548,7 +548,8 @@
         });
     }
 
-    inicializarDashboard();
+    // 2. CORREGIDO: Aseguramos que se dispare automáticamente cuando la pantalla esté totalmente cargada
+    window.addEventListener("DOMContentLoaded", inicializarDashboard);
 </script>
 </body>
 </html>
