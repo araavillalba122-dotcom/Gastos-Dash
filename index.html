@@ -11,7 +11,7 @@
 
     <div class="app-container">
         
-        <header class="glass-card header-main">
+      <header class="glass-card header-main">
             <h1>Control Financiero</h1>
             <p>Análisis de Gastos e Ingresos Proyectados</p>
             
@@ -24,8 +24,10 @@
                     <span class="kpi-title">Tarjeta Próximo Mes</span>
                     <span id="kpiTarjetaPorc" class="kpi-value">$ 0</span>
                 </div>
-                <div class="status-actualizacion">
-    Último consumo registrado: <span id="fechaActualizacion">Cargando...</span>
+            </div>
+
+            <div class="status-actualizacion" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; opacity: 0.7; text-align: right;">
+                Último consumo registrado: <span id="fechaActualizacion">Cargando...</span>
             </div>
         </header>
 
@@ -146,7 +148,6 @@
     let graficoMediosObj = null;
     let graficoTiposObj = null;
 
-    // 1. CORREGIDA: Ahora lee de forma separada los registros y la fecha de control
     async function inicializarDashboard() {
         try {
             const respuesta = await fetch(URL_API);
@@ -158,14 +159,11 @@
                 return;
             }
 
-            // Separamos los datos de las tablas del indicador de fecha
             datosGlobales = objetoRespuesta.datos || [];
             const ultimaFecha = objetoRespuesta.ultimaActualizacion || "Sin registros";
 
-            // Colocamos el texto de la última actualización en el cartelito del Header
             document.getElementById("fechaActualizacion").textContent = ultimaFecha;
             
-            // Renderizamos los componentes con los datos limpios
             poblarSelectorMeses();
             construirGraficoHistorico();
             actualizarDetalleMensual(); 
@@ -186,6 +184,7 @@
     function poblarSelectorMeses() {
         const selector = document.getElementById("selectorMesDetalle");
         const meses = obtenerMesesUnicos();
+        if (!selector) return;
         selector.innerHTML = "";
         
         meses.forEach(mes => {
@@ -209,7 +208,9 @@
 
     function construirGraficoHistorico() {
         const meses = obtenerMesesUnicos();
-        const tipoFiltro = document.getElementById("selectorHistorico").value;
+        const selector = document.getElementById("selectorHistorico");
+        if (!selector) return;
+        const tipoFiltro = selector.value;
 
         const datosSueldo = meses.map(mes => {
             return datosGlobales.filter(d => d.Mes.startsWith(mes) && d["Gasto/Ingreso"] === "Ingreso")
@@ -221,7 +222,9 @@
                                 .reduce((acc, curr) => acc + (curr["Valor de cuota"] || 0), 0);
         });
 
-        const ctx = document.getElementById('graficoHistorico').getContext('2d');
+        const canvas = document.getElementById('graficoHistorico');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         if(graficoHistObj) graficoHistObj.destroy();
 
         let datasets = [];
@@ -272,6 +275,8 @@
         const tbodyBalance = document.querySelector("#tablaBalance tbody");
         const tbodyMedios = document.querySelector("#tablaMedios tbody");
         const tbodyCategorias = document.querySelector("#tablaCategorias tbody");
+        
+        if (!tbodyBalance || !tbodyMedios || !tbodyCategorias) return;
         
         tbodyBalance.innerHTML = "";
         tbodyMedios.innerHTML = "";
@@ -379,23 +384,26 @@
             tbodyCategorias.appendChild(trCategorias);
         });
 
-        document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
-        document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
+        if(document.getElementById("kpiHogar")) document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
+        if(document.getElementById("kpiTarjetaPorc")) document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
     }
 
+    // LÍNEA CORREGIDA AQUÍ: Cambiado 'contents' por 'contenidos'
     function cambiarTab(evento, tabId) {
         const botones = document.querySelectorAll(".tab-btn");
         botones.forEach(btn => btn.classList.remove("active"));
         
         const contenidos = document.querySelectorAll(".tab-content");
-        contents.forEach(cont => cont.classList.remove("active"));
+        contenidos.forEach(cont => cont.classList.remove("active"));
         
         evento.currentTarget.classList.add("active");
         document.getElementById(tabId).classList.add("active");
     }
 
     function actualizarDetalleMensual() {
-        const mesSeleccionado = document.getElementById("selectorMesDetalle").value;
+        const selector = document.getElementById("selectorMesDetalle");
+        if (!selector || !selector.value) return;
+        const mesSeleccionado = selector.value;
         const registrosMes = datosGlobales.filter(d => d.Mes.startsWith(mesSeleccionado) && d["Gasto/Ingreso"] === "Gasto");
 
         const mediosMap = {};
@@ -404,24 +412,27 @@
             mediosMap[mp] = (mediosMap[mp] || 0) + (r["Valor de cuota"] || 0);
         });
 
-        const ctxMedios = document.getElementById('graficoMediosPago').getContext('2d');
-        if(graficoMediosObj) graficoMediosObj.destroy();
-        graficoMediosObj = new Chart(ctxMedios, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(mediosMap),
-                datasets: [{
-                    data: Object.values(mediosMap),
-                    backgroundColor: ['#d81b60', '#f48fb1', '#8e24aa', '#00acc1', '#5e35b1'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
-            }
-        });
+        const canvasMedios = document.getElementById('graficoMediosPago');
+        if (canvasMedios) {
+            const ctxMedios = canvasMedios.getContext('2d');
+            if(graficoMediosObj) graficoMediosObj.destroy();
+            graficoMediosObj = new Chart(ctxMedios, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(mediosMap),
+                    datasets: [{
+                        data: Object.values(mediosMap),
+                        backgroundColor: ['#d81b60', '#f48fb1', '#8e24aa', '#00acc1', '#5e35b1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                }
+            });
+        }
 
         const tiposMap = {};
         registrosMes.forEach(r => {
@@ -429,32 +440,35 @@
             tiposMap[tg] = (tiposMap[tg] || 0) + (r["Valor de cuota"] || 0);
         });
 
-        const ctxTipos = document.getElementById('graficoTiposGasto').getContext('2d');
-        if(graficoTiposObj) graficoTiposObj.destroy();
-        graficoTiposObj = new Chart(ctxTipos, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(tiposMap),
-                datasets: [{
-                    label: 'Monto ($)',
-                    data: Object.values(tiposMap),
-                    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-                    borderColor: 'rgba(255, 255, 255, 0.8)',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } },
-                    y: { ticks: { color: '#fff' } }
+        const canvasTipos = document.getElementById('graficoTiposGasto');
+        if (canvasTipos) {
+            const ctxTipos = canvasTipos.getContext('2d');
+            if(graficoTiposObj) graficoTiposObj.destroy();
+            graficoTiposObj = new Chart(ctxTipos, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(tiposMap),
+                    datasets: [{
+                        label: 'Monto ($)',
+                        data: Object.values(tiposMap),
+                        backgroundColor: 'rgba(255, 255, 255, 0.35)',
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } },
+                        y: { ticks: { color: '#fff' } }
+                    }
                 }
-            }
-        });
+            });
+        }
 
         construirTablaComparativa();
         calcularProyeccionCuotas(mesSeleccionado);
@@ -463,6 +477,7 @@
 
     function calcularProyeccionCuotas(mesCorte) {
         const contenedor = document.getElementById("contenedorCuotas");
+        if (!contenedor) return;
         contenedor.innerHTML = "";
 
         const meses = obtenerMesesUnicos();
@@ -499,6 +514,7 @@
 
     function calcularGastosRegulares() {
         const contenedor = document.getElementById("contenedorFijos");
+        if (!contenedor) return;
         contenedor.innerHTML = "";
 
         const registrosFijos = datosGlobales.filter(d => {
@@ -548,7 +564,6 @@
         });
     }
 
-    // 2. CORREGIDO: Aseguramos que se dispare automáticamente cuando la pantalla esté totalmente cargada
     window.addEventListener("DOMContentLoaded", inicializarDashboard);
 </script>
 </body>
