@@ -52,6 +52,13 @@ h2 {
     color: rgba(255,255,255,0.9);
 }
 
+.subtitle {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
 .card-header-actions {
     display: flex;
     justify-content: space-between;
@@ -112,6 +119,7 @@ select option { background: #1c1221; color: #fff; }
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 2px;
+    text-align: center;
 }
 .kpi-value {
     font-size: 0.85rem;
@@ -148,7 +156,6 @@ table td {
     font-size: 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-/* Primera columna adaptada al fondo de la tarjeta glass en caso de scroll lateral residual */
 table td:first-child, table th:first-child {
     position: sticky;
     left: 0;
@@ -207,9 +214,12 @@ table td:first-child, table th:first-child {
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.04);
-    border-left: 4px solid #d81b60; /* El indicador rosa de alerta */
+    border-left: 4px solid #d81b60; /* El indicador rosa de alerta para Tarjeta */
     padding: 10px 14px;
     border-radius: 8px;
+}
+.cuota-mercado-item {
+    border-left: 4px solid #ffb300; /* Indicador amarillo/dorado para Mercado Crédito */
 }
 .cuota-meta { display: flex; flex-direction: column; }
 .cuota-mes { font-size: 0.9rem; font-weight: 600; }
@@ -222,7 +232,7 @@ table td:first-child, table th:first-child {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 220px; /* Scroll sutil si la lista crece */
+    max-height: 220px;
     overflow-y: auto;
     padding-right: 4px;
 }
@@ -231,74 +241,11 @@ table td:first-child, table th:first-child {
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 12px;
     border-radius: 8px;
 }
-.fijo-meta { display: flex; flex-direction: column; text-align: left; }
-.fijo-nombre { font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.9); }
-.fijo-fecha { font-size: 0.75rem; color: rgba(255,255,255,0.4); } /* ¡Corregido acá! */
-.fijo-monto { font-size: 0.9rem; font-weight: 600; color: #4ade80; } /* Verde para visualización rápida */
-
-/* Scrollbar corporativo personalizado y sutil para la lista de fijos */
-.fijos-list::-webkit-scrollbar {
-    width: 4px;
-}
-.fijos-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.01);
-}
-.fijos-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
-}
-/* ==========================================================================
-   PERSONALIZACIÓN DE LA BARRA DE DESPLAZAMIENTO (SCROLLBAR)
-   Aesthetic: Minimalista, frío y adaptado a Glassmorphism
-   ========================================================================== */
-
-/* 1. Para Navegadores basados en WebKit (Chrome, Safari, Edge, Opera) */
-
-/* Espacio total de la barra (horizontal y vertical) */
-::-webkit-scrollbar {
-    width: 6px;  /* Ancho de la barra vertical */
-    height: 6px; /* Alto de la barra horizontal (para el scroll de las tablas) */
-}
-
-/* El fondo por donde corre la barra (Track) */
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.03); /* Casi invisible para no ensuciar el diseño */
-    border-radius: 10px;
-}
-
-/* La barrita que arrastrás (Thumb) */
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2); /* Blanco translúcido estilo glass */
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Delicado borde frío */
-    transition: background 0.3s ease;
-}
-
-/* Cuando pasás el mouse por encima o la estás arrastrando */
-::-webkit-scrollbar-thumb:hover,
-::-webkit-scrollbar-thumb:active {
-    background: rgba(255, 255, 255, 0.4); /* Se ilumina sutilmente al interactuar */
-}
-
-/* 2. Soporte Estándar Moderno (Para Firefox) */
-html, 
-.table-responsive {
-    scrollbar-width: thin; /* La hace delgada automáticamente */
-    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.03); /* (Color de barra) (Color de fondo) */
-}
-
-.status-actualizacion {
-    font-size: 0.85em;
-    color: rgba(255, 255, 255, 0.6);
-    text-align: right;
-    margin-bottom: 15px;
-    font-style: italic;
-}
-#fechaActualizacion {
-    color: #4ade80; /* Un verde sutil neón estilo glass que resalta que está ok */
-    font-weight: bold;
-}
+.fijo-meta { display: flex; flex-direction: column; }
+.fijo-nombre { font-size: 0.85rem; font-weight: 500; }
+.fijo-fecha { font-size: 0.7rem; color: rgba(255, 255, 255, 0.4); }
+.fijo-monto { font-size: 0.85rem; font-weight: 600; color: #e0e0e0; }
