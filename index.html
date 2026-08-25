@@ -24,6 +24,11 @@
                     <span class="kpi-title">Tarjeta Próximo Mes</span>
                     <span id="kpiTarjetaPorc" class="kpi-value">$ 0</span>
                 </div>
+                <!-- Cuadro condicional de Mercado Crédito (oculto por defecto) -->
+                <div id="kpiMercadoCreditoBox" class="kpi-box" style="display: none;">
+                    <span class="kpi-title">Mercado Crédito Próx. Mes</span>
+                    <span id="kpiMercadoCredito" class="kpi-value">$ 0</span>
+                </div>
             </div>
 
             <div class="status-actualizacion" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.85em; opacity: 0.7; text-align: right;">
@@ -126,10 +131,18 @@
             </div>
         </section>
 
+        <!-- Sección Cuotas Tarjeta -->
         <section class="glass-card cuotas-section">
             <h2>💳 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Tarjeta de Crédito</p>
             <div id="contenedorCuotas" class="cuotas-list"></div>
+        </section>
+
+        <!-- Sección Cuotas Mercado Crédito -->
+        <section class="glass-card cuotas-section">
+            <h2>🟡 Alerta de Cuotas Pendientes</h2>
+            <p class="subtitle">En Mercado Crédito</p>
+            <div id="contenedorCuotasMercado" class="cuotas-list"></div>
         </section>
 
         <section class="glass-card fijos-section">
@@ -159,16 +172,14 @@
                 return;
             }
 
-            // Normalizamos las propiedades del objeto para mitigar discrepancias de mayúsculas en la hoja
             datosGlobales = (objetoRespuesta.datos || []).map(d => {
-                // Asegurar formato YYYY-MM para la propiedad Mes independientemente de cómo venga del Sheets
                 let mesFormateado = "";
                 if (d.Mes || d.mes) {
                     const strMes = String(d.Mes || d.mes);
                     if (strMes.includes("-")) {
-                        mesFormateado = strMes.substring(0, 7); // Caso YYYY-MM-DD
+                        mesFormateado = strMes.substring(0, 7);
                     } else if (strMes.includes("/")) {
-                        const partes = strMes.split("/"); // Caso DD/MM/YYYY
+                        const partes = strMes.split("/");
                         if (partes[2] && partes[1]) {
                             mesFormateado = `${partes[2].substring(0,4)}-${partes[1].padStart(2, '0')}`;
                         }
@@ -182,13 +193,13 @@
                     "Tipo de gasto": d["Tipo de gasto"] || d["tipo de gasto"] || "",
                     "Concepto": d["Concepto"] || d["concepto"] || ""
                 };
-            }).filter(d => d.Mes !== ""); // Filtramos registros corruptos sin mes válido
+            }).filter(d => d.Mes !== "");
 
             const ultimaFecha = objetoRespuesta.ultimaActualizacion || "Sin registros";
             document.getElementById("fechaActualizacion").textContent = ultimaFecha;
             
             poblarSelectorMeses();
-            construirTablaComparativa(); // <-- CRÍTICO: Ejecutar antes para mapear KPIs iniciales
+            construirTablaComparativa();
             construirGraficoHistorico();
             actualizarDetalleMensual(); 
 
@@ -310,6 +321,7 @@
 
         let kpiHogarVal = 0;
         let kpiTarjetaPorcVal = 0;
+        let kpiMercadoCreditoVal = 0;
         
         const mesActualSeleccionado = document.getElementById("selectorMesDetalle")?.value || meses[meses.length - 1];
 
@@ -361,8 +373,13 @@
                 const mesSiguienteString = anioSigNum + "-" + String(mesSigNum).padStart(2, '0');
 
                 const registrosMesSiguiente = datosGlobales.filter(d => d.Mes === mesSiguienteString);
+                
                 kpiTarjetaPorcVal = registrosMesSiguiente
                     .filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("tarjeta"))
+                    .reduce((a, c) => a + c["Valor de cuota"], 0);
+
+                kpiMercadoCreditoVal = registrosMesSiguiente
+                    .filter(d => d["Gasto/Ingreso"] === "Gasto" && String(d["Tipo de pago"]).toLowerCase().includes("mercado"))
                     .reduce((a, c) => a + c["Valor de cuota"], 0);
 
                 kpiHogarVal = gastoHogar;
@@ -408,6 +425,17 @@
 
         if(document.getElementById("kpiHogar")) document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
         if(document.getElementById("kpiTarjetaPorc")) document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
+
+        // Lógica condicional KPI Mercado Crédito
+        const kpiBoxMercado = document.getElementById("kpiMercadoCreditoBox");
+        if(kpiBoxMercado) {
+            if(kpiMercadoCreditoVal > 0) {
+                document.getElementById("kpiMercadoCredito").textContent = fMoneda(kpiMercadoCreditoVal);
+                kpiBoxMercado.style.display = "flex";
+            } else {
+                kpiBoxMercado.style.display = "none";
+            }
+        }
     }
 
     function cambiarTab(evento, tabId) {
@@ -497,40 +525,78 @@
     }
 
     function calcularProyeccionCuotas(mesCorte) {
-        const contenedor = document.getElementById("contenedorCuotas");
-        if (!contenedor) return;
-        contenedor.innerHTML = "";
+        const contenedorTarjeta = document.getElementById("contenedorCuotas");
+        const contenedorMercado = document.getElementById("contenedorCuotasMercado");
+        
+        if (contenedorTarjeta) contenedorTarjeta.innerHTML = "";
+        if (contenedorMercado) contenedorMercado.innerHTML = "";
 
         const meses = obtenerMesesUnicos();
         const mesesFuturos = meses.filter(m => m > mesCorte).slice(0, 4);
 
         if(mesesFuturos.length === 0) {
-            contenedor.innerHTML = "<p class='no-data'>No hay cuotas programadas para los meses siguientes.</p>";
+            if (contenedorTarjeta) contenedorTarjeta.innerHTML = "<p class='no-data'>No hay cuotas programadas para los meses siguientes.</p>";
+            if (contenedorMercado) contenedorMercado.innerHTML = "<p class='no-data'>No hay cuotas programadas para los meses siguientes.</p>";
             return;
         }
 
+        let tieneTarjeta = false;
+        let tieneMercado = false;
+
         mesesFuturos.forEach(mes => {
+            const partes = mes.split("-");
+
+            // --- Tarjeta de Crédito ---
             const cuotasTarjeta = datosGlobales.filter(d => 
                 d.Mes === mes && 
                 d["Gasto/Ingreso"] === "Gasto" && 
                 String(d["Tipo de pago"]).toLowerCase().includes("tarjeta")
             );
 
-            const totalMesFuturo = cuotasTarjeta.reduce((a,c) => a + c["Valor de cuota"], 0);
-            const item = document.createElement("div");
-            item.className = "cuota-futura-item";
-            
-            const partes = mes.split("-");
+            if(cuotasTarjeta.length > 0 && contenedorTarjeta) {
+                tieneTarjeta = true;
+                const totalTarjeta = cuotasTarjeta.reduce((a,c) => a + c["Valor de cuota"], 0);
+                const item = document.createElement("div");
+                item.className = "cuota-futura-item";
+                item.innerHTML = `
+                    <div class="cuota-meta">
+                        <span class="cuota-mes">${partes[1]}/${partes[0]}</span>
+                        <span class="cuota-cant">${cuotasTarjeta.length} consumos programados</span>  
+                    </div>
+                    <div class="cuota-monto">${fMoneda(totalTarjeta)}</div>
+                `;
+                contenedorTarjeta.appendChild(item);
+            }
 
-            item.innerHTML = `
-                <div class="cuota-meta">
-                    <span class="cuota-mes">${partes[1]}/${partes[0]}</span>
-                    <span class="cuota-cant">${cuotasTarjeta.length} consumos programados</span>  
-                </div>
-                <div class="cuota-monto">${fMoneda(totalMesFuturo)}</div>
-            `;
-            contenedor.appendChild(item);
+            // --- Mercado Crédito ---
+            const cuotasMercado = datosGlobales.filter(d => 
+                d.Mes === mes && 
+                d["Gasto/Ingreso"] === "Gasto" && 
+                String(d["Tipo de pago"]).toLowerCase().includes("mercado")
+            );
+
+            if(cuotasMercado.length > 0 && contenedorMercado) {
+                tieneMercado = true;
+                const totalMercado = cuotasMercado.reduce((a,c) => a + c["Valor de cuota"], 0);
+                const item = document.createElement("div");
+                item.className = "cuota-futura-item cuota-mercado-item";
+                item.innerHTML = `
+                    <div class="cuota-meta">
+                        <span class="cuota-mes">${partes[1]}/${partes[0]}</span>
+                        <span class="cuota-cant">${cuotasMercado.length} consumos programados</span>  
+                    </div>
+                    <div class="cuota-monto">${fMoneda(totalMercado)}</div>
+                `;
+                contenedorMercado.appendChild(item);
+            }
         });
+
+        if (!tieneTarjeta && contenedorTarjeta) {
+            contenedorTarjeta.innerHTML = "<p class='no-data'>No hay cuotas de tarjeta programadas.</p>";
+        }
+        if (!tieneMercado && contenedorMercado) {
+            contenedorMercado.innerHTML = "<p class='no-data'>No hay cuotas de Mercado Crédito programadas.</p>";
+        }
     }
 
     function calcularGastosRegulares() {
