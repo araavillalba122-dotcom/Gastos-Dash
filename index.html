@@ -131,19 +131,19 @@
         </section>
 
         <section class="glass-card cuotas-section">
-            <h2>💳 Alerta de Cuotas Pendientes</h2>
+            <h2>Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Tarjeta de Crédito</p>
             <div id="contenedorCuotas" class="cuotas-list"></div>
         </section>
 
         <section class="glass-card cuotas-section">
-            <h2>🟡 Alerta de Cuotas Pendientes</h2>
+            <h2>Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Mercado Crédito</p>
             <div id="contenedorCuotasMercado" class="cuotas-list"></div>
         </section>
 
         <section class="glass-card fijos-section">
-            <h2>🏠 Servicios Hogar y Míos</h2>
+            <h2> Servicios Hogar y Míos</h2>
             <p class="subtitle">Último valor registrado Servicios</p>
             <div id="contenedorFijos" class="fijos-list"></div>
         </section>
@@ -196,7 +196,7 @@
     let graficoMediosObj = null;
     let graficoTiposObj = null;
 
-    async function inicializarDashboard() {
+async function inicializarDashboard() {
         try {
             const respuesta = await fetch(URL_API);
             const objetoRespuesta = await respuesta.json();
@@ -221,14 +221,34 @@
                     }
                 }
 
-                // Normalización de fecha original del consumo
-                let fechaOriginal = d.Fecha || d.fecha || "";
-                if (fechaOriginal instanceof Date) {
-                    fechaOriginal = fechaOriginal.toLocaleDateString('es-AR');
+                // =========================================================
+                // CORRECCIÓN DE FORMATO DE FECHA (ISO "2026-08-01T03:00:00.000Z" -> "01/08/2026")
+                // =========================================================
+                let fechaRaw = d.Fecha || d.fecha || "";
+                let fechaLimpia = "";
+
+                if (fechaRaw) {
+                    const strFecha = String(fechaRaw);
+                    if (strFecha.includes("T")) {
+                        // Extraemos la parte "YYYY-MM-DD" antes de la T
+                        const parteFecha = strFecha.split("T")[0]; 
+                        const partes = parteFecha.split("-");
+                        if (partes.length === 3) {
+                            fechaLimpia = `${partes[2]}/${partes[1]}/${partes[0]}`; // DD/MM/YYYY
+                        }
+                    } else if (strFecha.includes("-")) {
+                        const partes = strFecha.split("-");
+                        if (partes.length === 3) {
+                            fechaLimpia = `${partes[2].substring(0,2)}/${partes[1]}/${partes[0]}`;
+                        }
+                    } else {
+                        fechaLimpia = strFecha;
+                    }
                 }
+                // =========================================================
 
                 return {
-                    Fecha: fechaOriginal,
+                    Fecha: fechaLimpia,
                     Mes: mesFormateado,
                     "Gasto/Ingreso": d["Gasto/Ingreso"] || d["gasto/ingreso"] || "",
                     "Valor de cuota": Number(d["Valor de cuota"] || d["valor de cuota"] || d["Valor Cuota"] || d["valor cuota"] || 0),
