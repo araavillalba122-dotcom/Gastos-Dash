@@ -18,7 +18,7 @@ body {
 
 .app-container {
     width: 100%;
-    max-width: 430px; /* Ancho ideal móvil */
+    max-width: 430px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -162,12 +162,11 @@ table td:first-child, table th:first-child {
     font-weight: bold;
 }
 
-/* INTERACTIVIDAD EN CELDAS DE TABLA */
+/* CELDAS CLIQUEABLES DISCRETAS */
 .clickable-cell {
     cursor: pointer;
     color: #f48fb1;
     font-weight: bold;
-    text-decoration: underline dotted;
     transition: all 0.2s ease;
 }
 .clickable-cell:hover {
@@ -295,7 +294,7 @@ table td:first-child, table th:first-child {
     background: #181226;
     border: 1px solid rgba(216, 27, 96, 0.4);
     box-sizing: border-box;
-    overflow: hidden; /* Mantiene todo adentro de los bordes redondeados */
+    overflow: hidden;
 }
 .modal-header {
     display: flex;
