@@ -24,7 +24,6 @@
                     <span class="kpi-title">Tarjeta Próximo Mes</span>
                     <span id="kpiTarjetaPorc" class="kpi-value">$ 0</span>
                 </div>
-                <!-- Cuadro condicional de Mercado Crédito (oculto por defecto) -->
                 <div id="kpiMercadoCreditoBox" class="kpi-box" style="display: none;">
                     <span class="kpi-title">Mercado Crédito Próx. Mes</span>
                     <span id="kpiMercadoCredito" class="kpi-value">$ 0</span>
@@ -66,7 +65,7 @@
                             <tr>
                                 <th>Mes</th>
                                 <th>Sueldo</th>
-                                <th>Gasto Total</th>
+                                <th>Gasto Total 🔍</th>
                                 <th>Sobrante</th>
                             </tr>
                         </thead>
@@ -118,27 +117,25 @@
         </section>
 
         <section class="glass-card">
-            <h2>Distribución por Medio de Pago</h2>
+            <h2>Distribución por Medio de Pago <small style="font-size: 0.7em; opacity: 0.6;">(Clic para desglosar)</small></h2>
             <div class="chart-wrapper">
                 <canvas id="graficoMediosPago"></canvas>
             </div>
         </section>
 
         <section class="glass-card">
-            <h2>Análisis por Tipo de Gasto</h2>
+            <h2>Análisis por Tipo de Gasto <small style="font-size: 0.7em; opacity: 0.6;">(Clic para desglosar)</small></h2>
             <div class="chart-wrapper">
                 <canvas id="graficoTiposGasto"></canvas>
             </div>
         </section>
 
-        <!-- Sección Cuotas Tarjeta -->
         <section class="glass-card cuotas-section">
             <h2>💳 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Tarjeta de Crédito</p>
             <div id="contenedorCuotas" class="cuotas-list"></div>
         </section>
 
-        <!-- Sección Cuotas Mercado Crédito -->
         <section class="glass-card cuotas-section">
             <h2>🟡 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Mercado Crédito</p>
@@ -153,10 +150,48 @@
 
     </div>
 
+    <!-- MODAL DRILL-DOWN PARA VER DETALLE DE GASTOS -->
+    <div id="modalDetalle" class="modal-overlay">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalTitulo">Detalle de Gastos</h3>
+                    <p id="modalSubtitulo" class="subtitle" style="margin-bottom:0;">Filtro aplicado</p>
+                </div>
+                <button class="modal-close" onclick="cerrarModal()">&times;</button>
+            </div>
+            
+            <div class="modal-filter">
+                <input type="text" id="modalBuscador" placeholder="🔍 Buscar concepto..." oninput="filtrarTablaModal()">
+            </div>
+
+            <div class="table-responsive modal-body">
+                <table id="tablaModalDetalle">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Pago</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyModalDetalle"></tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <span>Total Filtrado:</span>
+                <strong id="modalTotalMonto" class="kpi-value">$ 0</strong>
+            </div>
+        </div>
+    </div>
+
 <script>
     const URL_API = "https://script.google.com/macros/s/AKfycbxgrRahTUilBkV4ZzEwX7UUHO6i08ZuLFtJSJOwwe5NtZ376PatHSVWsvViEknoi3Nz/exec";
 
     let datosGlobales = [];
+    let registrosModalActuales = [];
     let graficoHistObj = null;
     let graficoMediosObj = null;
     let graficoTiposObj = null;
@@ -185,7 +220,15 @@
                         }
                     }
                 }
+
+                // Normalización de fecha original del consumo
+                let fechaOriginal = d.Fecha || d.fecha || "";
+                if (fechaOriginal instanceof Date) {
+                    fechaOriginal = fechaOriginal.toLocaleDateString('es-AR');
+                }
+
                 return {
+                    Fecha: fechaOriginal,
                     Mes: mesFormateado,
                     "Gasto/Ingreso": d["Gasto/Ingreso"] || d["gasto/ingreso"] || "",
                     "Valor de cuota": Number(d["Valor de cuota"] || d["valor de cuota"] || d["Valor Cuota"] || d["valor cuota"] || 0),
@@ -392,11 +435,12 @@
                 ? "background-color: rgba(74, 222, 128, 0.15); color: #4ade80; font-weight: bold;" 
                 : "background-color: rgba(220, 38, 38, 0.2); color: #f87171; font-weight: bold;";
 
+            // TABLA BALANCE CON INTERACTIVIDAD EN GASTO TOTAL
             const trBalance = document.createElement("tr");
             trBalance.innerHTML = `
                 <td>${etiquetaMes}</td>
                 <td>${fMoneda(sueldo)}</td>
-                <td>${fMoneda(gastoTotal)}</td>
+                <td class="clickable-cell" onclick="abrirModalGastoTotal('${mes}')">${fMoneda(gastoTotal)} 🔍</td>
                 <td style="${styleSobrante}">${fMoneda(sobrante)}</td>
             `;
             tbodyBalance.appendChild(trBalance);
@@ -426,7 +470,6 @@
         if(document.getElementById("kpiHogar")) document.getElementById("kpiHogar").textContent = fMoneda(kpiHogarVal);
         if(document.getElementById("kpiTarjetaPorc")) document.getElementById("kpiTarjetaPorc").textContent = fMoneda(kpiTarjetaPorcVal);
 
-        // Lógica condicional KPI Mercado Crédito
         const kpiBoxMercado = document.getElementById("kpiMercadoCreditoBox");
         if(kpiBoxMercado) {
             if(kpiMercadoCreditoVal > 0) {
@@ -455,6 +498,7 @@
         const mesSeleccionado = selector.value;
         const registrosMes = datosGlobales.filter(d => d.Mes === mesSeleccionado && d["Gasto/Ingreso"] === "Gasto");
 
+        // --- GRAFICO MEDIOS DE PAGO CON CLIC INTERACTIVO ---
         const mediosMap = {};
         registrosMes.forEach(r => {
             const mp = r["Tipo de pago"] || "Otros";
@@ -478,11 +522,19 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } },
+                    onClick: (evt, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const index = activeElements[0].index;
+                            const medioSeleccionado = Object.keys(mediosMap)[index];
+                            abrirModalFiltro(mesSeleccionado, "medio", medioSeleccionado);
+                        }
+                    }
                 }
             });
         }
 
+        // --- GRAFICO TIPOS DE GASTO CON CLIC INTERACTIVO ---
         const tiposMap = {};
         registrosMes.forEach(r => {
             const tg = r["Tipo de gasto"] || "General";
@@ -514,6 +566,13 @@
                     scales: {
                         x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } },
                         y: { ticks: { color: '#fff' } }
+                    },
+                    onClick: (evt, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const index = activeElements[0].index;
+                            const tipoSeleccionado = Object.keys(tiposMap)[index];
+                            abrirModalFiltro(mesSeleccionado, "tipo", tipoSeleccionado);
+                        }
                     }
                 }
             });
@@ -522,6 +581,80 @@
         construirTablaComparativa();
         calcularProyeccionCuotas(mesSeleccionado);
         calcularGastosRegulares();
+    }
+
+    /* ================= LÓGICA DEL MODAL DRILL-DOWN ================= */
+    function abrirModalGastoTotal(mes) {
+        abrirModalFiltro(mes, "todo", null);
+    }
+
+    function abrirModalFiltro(mes, tipoFiltro, valorFiltro) {
+        const partesMes = mes.split("-");
+        const etiquetaMes = `${partesMes[1]}/${partesMes[0]}`;
+        
+        let titulo = `Gastos de ${etiquetaMes}`;
+        let subtitulo = "Todos los consumos registrados";
+
+        let filtrados = datosGlobales.filter(d => d.Mes === mes && d["Gasto/Ingreso"] === "Gasto");
+
+        if (tipoFiltro === "medio") {
+            titulo = `Gastos: ${valorFiltro}`;
+            subtitulo = `Medio de pago en ${etiquetaMes}`;
+            filtrados = filtrados.filter(d => String(d["Tipo de pago"]).toLowerCase() === String(valorFiltro).toLowerCase());
+        } else if (tipoFiltro === "tipo") {
+            titulo = `Gastos: ${valorFiltro}`;
+            subtitulo = `Categoría en ${etiquetaMes}`;
+            filtrados = filtrados.filter(d => String(d["Tipo de gasto"]).toLowerCase() === String(valorFiltro).toLowerCase());
+        }
+
+        registrosModalActuales = filtrados;
+
+        document.getElementById("modalTitulo").textContent = titulo;
+        document.getElementById("modalSubtitulo").textContent = subtitulo;
+        document.getElementById("modalBuscador").value = "";
+
+        renderizarTablaModal(registrosModalActuales);
+        document.getElementById("modalDetalle").classList.add("active");
+    }
+
+    function renderizarTablaModal(lista) {
+        const body = document.getElementById("bodyModalDetalle");
+        body.innerHTML = "";
+
+        let total = 0;
+
+        if(lista.length === 0) {
+            body.innerHTML = `<tr><td colspan="5" class="no-data">No hay registros para este filtro.</td></tr>`;
+        } else {
+            lista.forEach(r => {
+                total += r["Valor de cuota"];
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${r.Fecha || '-'}</td>
+                    <td style="text-align: left; font-weight: 500;">${r.Concepto}</td>
+                    <td><span class="badge-tag">${r["Tipo de pago"]}</span></td>
+                    <td>${r["Tipo de gasto"]}</td>
+                    <td style="font-weight: 700; color: #f48fb1;">${fMoneda(r["Valor de cuota"])}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        document.getElementById("modalTotalMonto").textContent = fMoneda(total);
+    }
+
+    function filtrarTablaModal() {
+        const q = document.getElementById("modalBuscador").value.toLowerCase();
+        const filtrados = registrosModalActuales.filter(r => 
+            String(r.Concepto).toLowerCase().includes(q) ||
+            String(r["Tipo de pago"]).toLowerCase().includes(q) ||
+            String(r["Tipo de gasto"]).toLowerCase().includes(q)
+        );
+        renderizarTablaModal(filtrados);
+    }
+
+    function cerrarModal() {
+        document.getElementById("modalDetalle").classList.remove("active");
     }
 
     function calcularProyeccionCuotas(mesCorte) {
@@ -546,7 +679,6 @@
         mesesFuturos.forEach(mes => {
             const partes = mes.split("-");
 
-            // --- Tarjeta de Crédito ---
             const cuotasTarjeta = datosGlobales.filter(d => 
                 d.Mes === mes && 
                 d["Gasto/Ingreso"] === "Gasto" && 
@@ -568,7 +700,6 @@
                 contenedorTarjeta.appendChild(item);
             }
 
-            // --- Mercado Crédito ---
             const cuotasMercado = datosGlobales.filter(d => 
                 d.Mes === mes && 
                 d["Gasto/Ingreso"] === "Gasto" && 
