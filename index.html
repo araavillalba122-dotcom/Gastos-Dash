@@ -117,33 +117,33 @@
         </section>
 
         <section class="glass-card">
-            <h2>Distribución por Medio de Pago <small style="font-size: 0.7em; opacity: 0.6;">(Clic para desglosar)</small></h2>
+            <h2>Distribución por Medio de Pago</h2>
             <div class="chart-wrapper">
                 <canvas id="graficoMediosPago"></canvas>
             </div>
         </section>
 
         <section class="glass-card">
-            <h2>Análisis por Tipo de Gasto <small style="font-size: 0.7em; opacity: 0.6;">(Clic para desglosar)</small></h2>
+            <h2>Análisis por Tipo de Gasto</h2>
             <div class="chart-wrapper">
                 <canvas id="graficoTiposGasto"></canvas>
             </div>
         </section>
 
         <section class="glass-card cuotas-section">
-            <h2>Alerta de Cuotas Pendientes</h2>
+            <h2>💳 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Tarjeta de Crédito</p>
             <div id="contenedorCuotas" class="cuotas-list"></div>
         </section>
 
         <section class="glass-card cuotas-section">
-            <h2>Alerta de Cuotas Pendientes</h2>
+            <h2>🟡 Alerta de Cuotas Pendientes</h2>
             <p class="subtitle">En Mercado Crédito</p>
             <div id="contenedorCuotasMercado" class="cuotas-list"></div>
         </section>
 
         <section class="glass-card fijos-section">
-            <h2> Servicios Hogar y Míos</h2>
+            <h2>🏠 Servicios Hogar y Míos</h2>
             <p class="subtitle">Último valor registrado Servicios</p>
             <div id="contenedorFijos" class="fijos-list"></div>
         </section>
@@ -162,7 +162,7 @@
             </div>
             
             <div class="modal-filter">
-                <input type="text" id="modalBuscador" placeholder="🔍 Buscar concepto..." oninput="filtrarTablaModal()">
+                <input type="text" id="modalBuscador" placeholder="Buscar concepto..." oninput="filtrarTablaModal()">
             </div>
 
             <div class="table-responsive modal-body">
@@ -196,7 +196,7 @@
     let graficoMediosObj = null;
     let graficoTiposObj = null;
 
-async function inicializarDashboard() {
+    async function inicializarDashboard() {
         try {
             const respuesta = await fetch(URL_API);
             const objetoRespuesta = await respuesta.json();
@@ -221,20 +221,16 @@ async function inicializarDashboard() {
                     }
                 }
 
-                // =========================================================
-                // CORRECCIÓN DE FORMATO DE FECHA (ISO "2026-08-01T03:00:00.000Z" -> "01/08/2026")
-                // =========================================================
                 let fechaRaw = d.Fecha || d.fecha || "";
                 let fechaLimpia = "";
 
                 if (fechaRaw) {
                     const strFecha = String(fechaRaw);
                     if (strFecha.includes("T")) {
-                        // Extraemos la parte "YYYY-MM-DD" antes de la T
                         const parteFecha = strFecha.split("T")[0]; 
                         const partes = parteFecha.split("-");
                         if (partes.length === 3) {
-                            fechaLimpia = `${partes[2]}/${partes[1]}/${partes[0]}`; // DD/MM/YYYY
+                            fechaLimpia = `${partes[2]}/${partes[1]}/${partes[0]}`;
                         }
                     } else if (strFecha.includes("-")) {
                         const partes = strFecha.split("-");
@@ -245,7 +241,6 @@ async function inicializarDashboard() {
                         fechaLimpia = strFecha;
                     }
                 }
-                // =========================================================
 
                 return {
                     Fecha: fechaLimpia,
@@ -455,12 +450,11 @@ async function inicializarDashboard() {
                 ? "background-color: rgba(74, 222, 128, 0.15); color: #4ade80; font-weight: bold;" 
                 : "background-color: rgba(220, 38, 38, 0.2); color: #f87171; font-weight: bold;";
 
-            // TABLA BALANCE CON INTERACTIVIDAD EN GASTO TOTAL
             const trBalance = document.createElement("tr");
             trBalance.innerHTML = `
                 <td>${etiquetaMes}</td>
                 <td>${fMoneda(sueldo)}</td>
-                <td class="clickable-cell" onclick="abrirModalGastoTotal('${mes}')">${fMoneda(gastoTotal)} 🔍</td>
+                <td class="clickable-cell" onclick="abrirModalGastoTotal('${mes}')">${fMoneda(gastoTotal)}</td>
                 <td style="${styleSobrante}">${fMoneda(sobrante)}</td>
             `;
             tbodyBalance.appendChild(trBalance);
@@ -518,7 +512,6 @@ async function inicializarDashboard() {
         const mesSeleccionado = selector.value;
         const registrosMes = datosGlobales.filter(d => d.Mes === mesSeleccionado && d["Gasto/Ingreso"] === "Gasto");
 
-        // --- GRAFICO MEDIOS DE PAGO CON CLIC INTERACTIVO ---
         const mediosMap = {};
         registrosMes.forEach(r => {
             const mp = r["Tipo de pago"] || "Otros";
@@ -554,7 +547,6 @@ async function inicializarDashboard() {
             });
         }
 
-        // --- GRAFICO TIPOS DE GASTO CON CLIC INTERACTIVO ---
         const tiposMap = {};
         registrosMes.forEach(r => {
             const tg = r["Tipo de gasto"] || "General";
@@ -603,7 +595,6 @@ async function inicializarDashboard() {
         calcularGastosRegulares();
     }
 
-    /* ================= LÓGICA DEL MODAL DRILL-DOWN ================= */
     function abrirModalGastoTotal(mes) {
         abrirModalFiltro(mes, "todo", null);
     }
