@@ -268,9 +268,9 @@ table td:first-child, table th:first-child {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(10, 8, 18, 0.75);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(10, 8, 18, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -279,6 +279,7 @@ table td:first-child, table th:first-child {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
+    box-sizing: border-box;
 }
 .modal-overlay.active {
     opacity: 1;
@@ -286,13 +287,15 @@ table td:first-child, table th:first-child {
 }
 .modal-card {
     width: 100%;
-    max-width: 420px;
+    max-width: 400px;
     max-height: 85vh;
     display: flex;
     flex-direction: column;
     gap: 12px;
     background: #181226;
     border: 1px solid rgba(216, 27, 96, 0.4);
+    box-sizing: border-box;
+    overflow: hidden; /* Mantiene todo adentro de los bordes redondeados */
 }
 .modal-header {
     display: flex;
@@ -308,9 +311,14 @@ table td:first-child, table th:first-child {
     cursor: pointer;
     line-height: 1;
 }
+.modal-filter {
+    width: 100%;
+    box-sizing: border-box;
+}
 .modal-filter input {
     width: 100%;
-    padding: 8px 12px;
+    box-sizing: border-box;
+    padding: 10px 12px;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 10px;
@@ -319,8 +327,9 @@ table td:first-child, table th:first-child {
     outline: none;
 }
 .modal-body {
-    max-height: 50vh;
+    max-height: 45vh;
     overflow-y: auto;
+    border-radius: 8px;
 }
 .badge-tag {
     background: rgba(255,255,255,0.08);
